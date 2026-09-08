@@ -6,8 +6,10 @@
   <title>Of Ambition and Grind — Banner Generator</title>
   <link rel="stylesheet" href="./style.css">
 </head>
+
 <body>
   <main class="app">
+
     <header class="topbar">
       <div>
         <p class="eyebrow">EMAIL SIGNATURE BANNER</p>
@@ -65,6 +67,7 @@
           >
         </label>
 
+
         <h2 class="section-title">Appearance</h2>
 
         <div class="two-col">
@@ -79,38 +82,40 @@
           </label>
 
           <label>
-            Photo visibility
-            <div class="range-row">
-              <input
-                id="photoInput"
-                type="range"
-                min="0"
-                max="100"
-                value="24"
-              >
-              <output id="photoValue">24%</output>
-            </div>
+            Reveal colour
+            <input
+              id="revealColorInput"
+              type="color"
+              value="#ffffff"
+            >
           </label>
 
         </div>
 
-        <label>
-          Gradient start colour
-          <input
-            id="gradientStartInput"
-            type="color"
-            value="#000000"
-          >
-        </label>
 
-        <label>
-          Gradient end colour
-          <input
-            id="gradientEndInput"
-            type="color"
-            value="#ffffff"
-          >
-        </label>
+        <h2 class="section-title">Reveal gradient</h2>
+
+        <div class="two-col">
+
+          <label>
+            Gradient start
+            <input
+              id="gradientStartInput"
+              type="color"
+              value="#ffffff"
+            >
+          </label>
+
+          <label>
+            Gradient end
+            <input
+              id="gradientEndInput"
+              type="color"
+              value="#777777"
+            >
+          </label>
+
+        </div>
 
         <label>
           Gradient angle
@@ -124,13 +129,33 @@
             >
             <output id="gradientAngleValue">90°</output>
           </div>
+        </label>
+
+
+        <label>
+          Photo visibility
+
+          <div class="range-row">
+            <input
+              id="photoInput"
+              type="range"
+              min="0"
+              max="100"
+              value="24"
+            >
+
+            <output id="photoValue">24%</output>
+          </div>
+
           <span class="hint">
-            Changes the direction of the overlay gradient.
+            How much of the photograph remains visible.
           </span>
         </label>
 
+
         <label>
           Reveal opacity
+
           <div class="range-row">
             <input
               id="revealOpacityInput"
@@ -139,23 +164,29 @@
               max="100"
               value="100"
             >
+
             <output id="revealOpacityValue">100%</output>
           </div>
+
           <span class="hint">
-            Controls the transparency of the semicircle overlay.
+            Controls the opacity of the semicircle overlay.
           </span>
         </label>
+
 
         <label class="check-row">
           <input
             id="transparentInput"
             type="checkbox"
           >
+
           <span>Transparent reveal shape</span>
         </label>
 
+
         <label>
           Animation speed
+
           <div class="range-row">
             <input
               id="speedInput"
@@ -164,25 +195,38 @@
               max="140"
               value="80"
             >
+
             <output id="speedValue">80%</output>
           </div>
         </label>
 
+
         <div class="buttons">
-          <button id="pngBtn" type="button">
+          <button
+            id="pngBtn"
+            type="button"
+          >
             Download PNG
           </button>
 
-          <button id="gifBtn" class="primary" type="button">
+          <button
+            id="gifBtn"
+            class="primary"
+            type="button"
+          >
             Generate GIF
           </button>
         </div>
 
-        <p id="status" class="status">
+        <p
+          id="status"
+          class="status"
+        >
           Loading background image…
         </p>
 
       </aside>
+
 
       <section class="preview-panel">
 
@@ -201,9 +245,15 @@
       </section>
 
     </section>
+
   </main>
 
+
+  <!-- GIF.js -->
   <script src="https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.js"></script>
+
+  <!-- Your application -->
   <script src="./app.js" defer></script>
+
 </body>
 </html>
