@@ -1,108 +1,222 @@
-const W = 600, H = 200;
+const W = 600;
+const H = 200;
 
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 
 const imageInput = document.getElementById("imageInput");
+
 const titleInput = document.getElementById("titleInput");
 const subInput = document.getElementById("subInput");
 const ctaInput = document.getElementById("ctaInput");
 const urlInput = document.getElementById("urlInput");
+
 const overlayInput = document.getElementById("overlayInput");
+const overlayValue = document.getElementById("overlayValue");
+
 const speedInput = document.getElementById("speedInput");
+const speedValue = document.getElementById("speedValue");
+
 const statusEl = document.getElementById("status");
 
 let source = new Image();
 let sourceReady = false;
-let start = performance.now();
+
+const animationStart = performance.now();
+
+
+/* =========================================================
+   DEFAULT BOOK IMAGE
+========================================================= */
 
 source.onload = () => {
   sourceReady = true;
   draw(0);
 };
 
+source.onerror = () => {
+  statusEl.textContent =
+    "Could not load assets/book-background.png";
+};
+
 source.src = "assets/book-background.png";
 
 
-/* --------------------------------
+/* =========================================================
    IMAGE UPLOAD
--------------------------------- */
+========================================================= */
 
-imageInput.addEventListener("change", e => {
-  const file = e.target.files[0];
-  if (!file) return;
+imageInput.addEventListener("change", event => {
+
+  const file = event.target.files[0];
+
+  if (!file) {
+    return;
+  }
 
   const reader = new FileReader();
 
   reader.onload = () => {
-    source = new Image();
 
-    source.onload = () => {
+    const uploaded = new Image();
+
+    uploaded.onload = () => {
+
+      source = uploaded;
       sourceReady = true;
+
+      statusEl.textContent =
+        "Background image loaded.";
+
       draw(0);
     };
 
-    source.src = reader.result;
+    uploaded.onerror = () => {
+
+      statusEl.textContent =
+        "Could not load that image.";
+
+    };
+
+    uploaded.src = reader.result;
   };
 
   reader.readAsDataURL(file);
 });
 
 
-/* --------------------------------
-   LIVE CONTROLS
--------------------------------- */
+/* =========================================================
+   CONTROLS
+========================================================= */
 
 [
   titleInput,
   subInput,
   ctaInput,
-  urlInput,
-  overlayInput,
-  speedInput
-].forEach(el => {
-  el.addEventListener("input", () => {
-    draw((performance.now() - start) / 1000);
+  urlInput
+].forEach(input => {
+
+  input.addEventListener("input", () => {
+
+    draw(
+      (performance.now() - animationStart) / 1000
+    );
+
   });
+
 });
 
 
-/* --------------------------------
-   IMAGE FIT
--------------------------------- */
+overlayInput.addEventListener("input", () => {
 
-function coverImage(img, w, h) {
-  const scale = Math.max(
-    w / img.width,
-    h / img.height
+  updateOverlayLabel();
+
+  draw(
+    (performance.now() - animationStart) / 1000
   );
 
-  const sw = img.width * scale;
-  const sh = img.height * scale;
+});
+
+
+speedInput.addEventListener("input", () => {
+
+  updateSpeedLabel();
+
+});
+
+
+function updateOverlayLabel() {
+
+  const value =
+    Number(overlayInput.value);
+
+  overlayValue.textContent =
+    `${value}%`;
+}
+
+
+function updateSpeedLabel() {
+
+  const value =
+    Number(speedInput.value);
+
+  let label = "Normal";
+
+  if (value < 65) {
+    label = "Fast";
+  }
+
+  if (value > 105) {
+    label = "Slow";
+  }
+
+  speedValue.textContent = label;
+}
+
+
+updateOverlayLabel();
+updateSpeedLabel();
+
+
+/* =========================================================
+   IMAGE COVER
+========================================================= */
+
+function drawCoverImage(image) {
+
+  const imageRatio =
+    image.width / image.height;
+
+  const canvasRatio =
+    W / H;
+
+  let drawWidth;
+  let drawHeight;
+
+  if (imageRatio > canvasRatio) {
+
+    drawHeight = H;
+    drawWidth = H * imageRatio;
+
+  } else {
+
+    drawWidth = W;
+    drawHeight = W / imageRatio;
+
+  }
+
+  const x =
+    (W - drawWidth) / 2;
+
+  const y =
+    (H - drawHeight) / 2;
 
   ctx.drawImage(
-    img,
-    (w - sw) / 2,
-    (h - sh) / 2,
-    sw,
-    sh
+    image,
+    x,
+    y,
+    drawWidth,
+    drawHeight
   );
 }
 
 
-/* --------------------------------
-   TITLE SIZING
--------------------------------- */
+/* =========================================================
+   TITLE SIZE
+========================================================= */
 
-function fitTitle(text, maxWidth) {
+function getTitleSize(text) {
 
-  let size = 35;
+  let size = 34;
 
   while (size > 20) {
 
-    ctx.font = `700 ${size}px Georgia, serif`;
+    ctx.font =
+      `700 ${size}px Georgia, "Times New Roman", serif`;
 
-    if (ctx.measureText(text).width <= maxWidth) {
+    if (
+      ctx.measureText(text).width <= 350
+    ) {
       return size;
     }
 
@@ -113,142 +227,248 @@ function fitTitle(text, maxWidth) {
 }
 
 
-/* --------------------------------
-   DRAW TEXT
--------------------------------- */
+/* =========================================================
+   TEXT
+========================================================= */
 
 function drawText(color) {
 
   const title =
-    titleInput.value.trim().toUpperCase();
+    titleInput.value
+      .trim()
+      .toUpperCase();
 
   const sub =
-    subInput.value.trim().toUpperCase();
+    subInput.value
+      .trim()
+      .toUpperCase();
 
   const cta =
-    ctaInput.value.trim().toUpperCase();
+    ctaInput.value
+      .trim()
+      .toUpperCase();
 
 
-  ctx.textBaseline = "middle";
-  ctx.textAlign = "left";
+  /*
+     TITLE
+  */
 
-
-  /* TITLE */
-
-  const titleSize = fitTitle(title, 350);
+  const titleSize =
+    getTitleSize(title);
 
   ctx.font =
-    `700 ${titleSize}px Georgia, serif`;
+    `700 ${titleSize}px Georgia, "Times New Roman", serif`;
 
   ctx.fillStyle = color;
+
+  ctx.textAlign = "left";
+  ctx.textBaseline = "middle";
 
   ctx.fillText(
     title,
     30,
-    76
+    73
   );
 
 
-  /* SUPPORTING TEXT */
+  /*
+     SUPPORTING TEXT
+  */
 
   ctx.font =
-    "600 10px Arial, sans-serif";
+    "600 10px Arial, Helvetica, sans-serif";
 
   ctx.fillStyle = color;
 
   ctx.fillText(
     sub,
     32,
-    118
+    116
   );
 
 
-  /* CTA */
-
-  const ctaY = 158;
+  /*
+     CTA
+  */
 
   ctx.font =
-    "700 11px Arial, sans-serif";
-
-  ctx.fillStyle = color;
+    "700 11px Arial, Helvetica, sans-serif";
 
   ctx.fillText(
     cta,
     32,
-    ctaY
+    155
   );
 
+
+  /*
+     ARROW
+  */
 
   const ctaWidth =
     ctx.measureText(cta).width;
 
-
   ctx.font =
-    "700 16px Arial, sans-serif";
+    "700 15px Arial, Helvetica, sans-serif";
 
   ctx.fillText(
     "→",
     42 + ctaWidth,
-    ctaY
+    155
   );
 
 
-  /* UNDERLINE */
+  /*
+     SMALL DIVIDER
+  */
 
   ctx.strokeStyle = color;
   ctx.lineWidth = 1;
 
   ctx.beginPath();
 
-  ctx.moveTo(32, 177);
+  ctx.moveTo(
+    32,
+    174
+  );
 
   ctx.lineTo(
-    32 + Math.min(190, ctaWidth + 45),
-    177
+    32 + Math.min(185, ctaWidth + 45),
+    174
   );
 
   ctx.stroke();
 }
 
 
-/* --------------------------------
-   MAIN ANIMATION
---------------------------------
+/* =========================================================
+   DARK OPENING STATE
+========================================================= */
 
-   0.00 → 1.50 seconds
-   BLACK STATE
-   White text
+function drawDarkState(opacity) {
 
-   1.50 → 2.35 seconds
-   WHITE LIGHT SHOOTS
-   FROM BOTTOM → TOP
+  /*
+     IMPORTANT:
 
-   2.35 → 3.00 seconds
-   WHITE STATE
-   Black text
+     This is NOT opaque black.
 
--------------------------------- */
+     The photograph remains visible
+     underneath the black overlay.
+  */
+
+  ctx.fillStyle =
+    `rgba(0, 0, 0, ${opacity})`;
+
+  ctx.fillRect(
+    0,
+    0,
+    W,
+    H
+  );
+
+
+  /*
+     WHITE TEXT
+  */
+
+  drawText(
+    "rgba(255,255,255,0.96)"
+  );
+}
+
+
+/* =========================================================
+   WHITE FINAL STATE
+========================================================= */
+
+function drawLightState(opacity) {
+
+  /*
+     IMPORTANT:
+
+     This is NOT solid white.
+
+     The photograph remains visible
+     underneath the white overlay.
+  */
+
+  ctx.fillStyle =
+    `rgba(255, 255, 255, ${opacity})`;
+
+  ctx.fillRect(
+    0,
+    0,
+    W,
+    H
+  );
+
+
+  /*
+     BLACK TEXT
+  */
+
+  drawText(
+    "rgba(18,18,18,0.96)"
+  );
+}
+
+
+/* =========================================================
+   MAIN DRAW
+========================================================= */
 
 function draw(t) {
 
-  ctx.clearRect(0, 0, W, H);
-
-  if (!sourceReady) return;
-
-
-  /* -----------------------------
-     BASE PHOTO
-  ----------------------------- */
-
-  coverImage(source, W, H);
+  ctx.clearRect(
+    0,
+    0,
+    W,
+    H
+  );
 
 
-  const strength =
+  if (!sourceReady) {
+    return;
+  }
+
+
+  /*
+     ALWAYS START WITH THE PHOTOGRAPH
+  */
+
+  drawCoverImage(source);
+
+
+  /*
+     USER CONTROL
+
+     0% transparency =
+     strongest overlay
+
+     70% transparency =
+     very subtle overlay
+  */
+
+  const transparency =
     Number(overlayInput.value) / 100;
 
 
   /*
-     THREE-SECOND LOOP
+     Convert transparency into
+     overlay opacity.
+
+     Default:
+
+     30% transparent
+     = 70% overlay opacity
+  */
+
+  const overlayOpacity =
+    1 - transparency;
+
+
+  /*
+     3 SECOND LOOP
   */
 
   const duration = 3.0;
@@ -258,151 +478,69 @@ function draw(t) {
 
 
   /*
-     TRANSITION STARTS AT 1.25s
+     ---------------------------------
+     PHASE 1
+     DARK STATE
+     ---------------------------------
   */
 
-  const transitionStart = 1.25;
-  const transitionDuration = 0.85;
+  const transitionStart = 1.20;
 
 
-  let progress = 0;
+  if (time < transitionStart) {
 
-  if (time > transitionStart) {
-
-    progress =
-      Math.min(
-        1,
-        (time - transitionStart) /
-        transitionDuration
-      );
-
-  }
-
-
-  /* -----------------------------
-     DARK OPENING STATE
-  ----------------------------- */
-
-  /*
-     The first state is intentionally
-     almost black.
-
-     This gives us the reference-image
-     effect:
-
-     BLACK + WHITE TEXT
-  */
-
-  if (progress === 0) {
-
-    ctx.fillStyle =
-      `rgba(0,0,0,${0.82 * strength})`;
-
-    ctx.fillRect(
-      0,
-      0,
-      W,
-      H
-    );
-
-    drawText(
-      "rgba(255,255,255,.96)"
+    drawDarkState(
+      0.72 * overlayOpacity
     );
 
     return;
   }
 
 
-  /* -----------------------------
-     UPWARD LIGHT TRANSITION
-  ----------------------------- */
+  /*
+     ---------------------------------
+     PHASE 2
+     UPWARD LIGHT SHOT
+     ---------------------------------
+  */
+
+  const transitionDuration = 0.90;
+
+  let progress =
+    (time - transitionStart) /
+    transitionDuration;
+
+  progress =
+    Math.max(
+      0,
+      Math.min(
+        1,
+        progress
+      )
+    );
+
 
   /*
-     Easing makes the light shoot upward
-     rather than move linearly.
+     Strong acceleration at the beginning,
+     then smooth finish.
   */
 
   const eased =
-    1 - Math.pow(1 - progress, 3);
-
-
-  /*
-     The white region starts at the
-     BOTTOM.
-
-     As it rises it becomes wider.
-  */
-
-  const bottom =
-    H + 20;
-
-  const top =
-    bottom - eased * (H + 40);
-
-
-  /*
-     Width grows as the light rises.
-  */
-
-  const maxWidth = 230;
-
-  const width =
-    25 + eased * maxWidth;
-
-
-  /*
-     Center of the rising light.
-  */
-
-  const centerX =
-    W * 0.50;
-
-
-  /*
-     Soft feathered light.
-
-     This is deliberately NOT a
-     left-to-right sweep.
-  */
-
-  const light =
-    ctx.createRadialGradient(
-      centerX,
-      top,
-      0,
-      centerX,
-      top,
-      width
+    1 -
+    Math.pow(
+      1 - progress,
+      3
     );
 
 
-  light.addColorStop(
-    0,
-    `rgba(255,255,255,${0.98 * eased})`
-  );
-
-  light.addColorStop(
-    0.35,
-    `rgba(255,255,255,${0.92 * eased})`
-  );
-
-  light.addColorStop(
-    0.72,
-    `rgba(255,255,255,${0.45 * eased})`
-  );
-
-  light.addColorStop(
-    1,
-    "rgba(255,255,255,0)"
-  );
-
-
   /*
-     First create the black state.
+     ---------------------------------
+     DARK BASE
+     ---------------------------------
   */
 
   ctx.fillStyle =
-    `rgba(0,0,0,${0.82 * strength})`;
+    `rgba(0,0,0,${0.72 * overlayOpacity})`;
 
   ctx.fillRect(
     0,
@@ -413,23 +551,129 @@ function draw(t) {
 
 
   /*
-     Rising light.
+     ---------------------------------
+     UPWARD LIGHT POSITION
+     ---------------------------------
+
+     Starts below the canvas.
+
+     Ends above the canvas.
+
+     Therefore the light literally
+     shoots upward through the banner.
   */
 
-  ctx.save();
+  const startY = H + 35;
+  const endY = -35;
 
-  ctx.beginPath();
+  const lightY =
+    startY +
+    (endY - startY) * eased;
 
-  ctx.rect(
-    centerX - width,
-    top - width,
-    width * 2,
-    H - top + width
+
+  /*
+     ---------------------------------
+     LIGHT SPREAD
+     ---------------------------------
+
+     It begins narrow and becomes
+     much wider as it travels upward.
+  */
+
+  const startWidth = 30;
+  const endWidth = 310;
+
+  const lightWidth =
+    startWidth +
+    (endWidth - startWidth) * eased;
+
+
+  /*
+     ---------------------------------
+     LIGHT CENTER
+     ---------------------------------
+
+     Slightly left of center so the
+     light can reveal the composition
+     without simply sweeping sideways.
+  */
+
+  const centerX = 270;
+
+
+  /*
+     ---------------------------------
+     SOFT LIGHT CORE
+     ---------------------------------
+  */
+
+  const lightGradient =
+    ctx.createRadialGradient(
+      centerX,
+      lightY,
+      0,
+      centerX,
+      lightY,
+      lightWidth
+    );
+
+
+  lightGradient.addColorStop(
+    0,
+    `rgba(
+      255,
+      255,
+      255,
+      ${0.82 * overlayOpacity}
+    )`
   );
 
-  ctx.clip();
 
-  ctx.fillStyle = light;
+  lightGradient.addColorStop(
+    0.25,
+    `rgba(
+      255,
+      255,
+      255,
+      ${0.68 * overlayOpacity}
+    )`
+  );
+
+
+  lightGradient.addColorStop(
+    0.55,
+    `rgba(
+      255,
+      255,
+      255,
+      ${0.38 * overlayOpacity}
+    )`
+  );
+
+
+  lightGradient.addColorStop(
+    0.78,
+    `rgba(
+      255,
+      255,
+      255,
+      ${0.15 * overlayOpacity}
+    )`
+  );
+
+
+  lightGradient.addColorStop(
+    1,
+    "rgba(255,255,255,0)"
+  );
+
+
+  /*
+     Draw the expanding light.
+  */
+
+  ctx.fillStyle =
+    lightGradient;
 
   ctx.fillRect(
     0,
@@ -438,52 +682,82 @@ function draw(t) {
     H
   );
 
-  ctx.restore();
-
 
   /*
-     Main white rising field.
+     ---------------------------------
+     VERTICAL WHITE REVEAL
+     ---------------------------------
 
-     This is what creates the
-     "black becomes white" effect.
+     This creates the broad white
+     field following behind the
+     upward shot.
   */
 
-  const field =
+  const revealTop =
+    lightY - lightWidth * 0.45;
+
+
+  const revealGradient =
     ctx.createLinearGradient(
       0,
-      top - 30,
+      revealTop,
       0,
       H
     );
 
 
-  field.addColorStop(
+  revealGradient.addColorStop(
     0,
     "rgba(255,255,255,0)"
   );
 
-  field.addColorStop(
-    0.18,
-    `rgba(255,255,255,${0.35 * eased})`
+
+  revealGradient.addColorStop(
+    0.12,
+    `rgba(
+      255,
+      255,
+      255,
+      ${0.18 * eased * overlayOpacity}
+    )`
   );
 
-  field.addColorStop(
-    0.42,
-    `rgba(255,255,255,${0.88 * eased})`
+
+  revealGradient.addColorStop(
+    0.30,
+    `rgba(
+      255,
+      255,
+      255,
+      ${0.34 * eased * overlayOpacity}
+    )`
   );
 
-  field.addColorStop(
-    0.68,
-    `rgba(255,255,255,${0.97 * eased})`
+
+  revealGradient.addColorStop(
+    0.55,
+    `rgba(
+      255,
+      255,
+      255,
+      ${0.55 * eased * overlayOpacity}
+    )`
   );
 
-  field.addColorStop(
+
+  revealGradient.addColorStop(
     1,
-    `rgba(255,255,255,${0.98 * eased})`
+    `rgba(
+      255,
+      255,
+      255,
+      ${0.70 * eased * overlayOpacity}
+    )`
   );
 
 
-  ctx.fillStyle = field;
+  ctx.fillStyle =
+    revealGradient;
 
   ctx.fillRect(
     0,
@@ -493,119 +767,149 @@ function draw(t) {
   );
 
 
-  /* -----------------------------
-     TEXT TRANSFORMATION
-  ----------------------------- */
-
   /*
-     Text changes from WHITE → BLACK
-     as the white field rises.
+     ---------------------------------
+     TEXT TRANSITION
+     ---------------------------------
+
+     White text gradually becomes
+     black as the white state appears.
   */
 
-  const textMix = eased;
+  const textR =
+    Math.round(
+      255 -
+      237 * eased
+    );
 
-  const r =
-    Math.round(255 * (1 - textMix));
+  const textG =
+    Math.round(
+      255 -
+      237 * eased
+    );
 
-  const g =
-    Math.round(255 * (1 - textMix));
-
-  const b =
-    Math.round(255 * (1 - textMix));
-
-
-  const alpha =
-    0.96;
+  const textB =
+    Math.round(
+      255 -
+      237 * eased
+    );
 
 
   drawText(
-    `rgba(${r},${g},${b},${alpha})`
+    `rgba(
+      ${textR},
+      ${textG},
+      ${textB},
+      0.96
+    )`
   );
 
 
-  /* -----------------------------
-     FINAL WHITE STATE
-  ----------------------------- */
+  /*
+     ---------------------------------
+     FINAL LIGHT STATE
+     ---------------------------------
+  */
 
   if (progress >= 1) {
 
-    ctx.fillStyle =
-      "rgba(255,255,255,.97)";
-
-    ctx.fillRect(
-      0,
-      0,
-      W,
-      H
-    );
-
-    drawText(
-      "rgba(20,20,20,.96)"
+    drawLightState(
+      0.70 * overlayOpacity
     );
 
   }
 }
 
 
-/* --------------------------------
-   ANIMATION PREVIEW
--------------------------------- */
+/* =========================================================
+   ANIMATION LOOP
+========================================================= */
 
 function animationLoop(now) {
 
-  draw(
-    (now - start) / 1000
-  );
+  const elapsed =
+    (now - animationStart) / 1000;
+
+  draw(elapsed);
 
   requestAnimationFrame(
     animationLoop
   );
 }
 
+
 requestAnimationFrame(
   animationLoop
 );
 
 
-/* --------------------------------
-   PNG DOWNLOAD
--------------------------------- */
+/* =========================================================
+   PNG
+========================================================= */
 
-document.getElementById("pngBtn").onclick =
-  () => {
+document
+  .getElementById("pngBtn")
+  .addEventListener("click", () => {
 
     /*
-       PNG captures the current state.
+       Capture the current frame.
     */
 
     draw(
-      (performance.now() - start) / 1000
+      (performance.now() - animationStart) /
+      1000
     );
 
-    const a =
+
+    const link =
       document.createElement("a");
 
-    a.download =
+
+    link.download =
       "of-ambition-and-grind-banner.png";
 
-    a.href =
-      canvas.toDataURL("image/png");
 
-    a.click();
-  };
+    link.href =
+      canvas.toDataURL(
+        "image/png"
+      );
 
 
-/* --------------------------------
-   GIF GENERATION
--------------------------------- */
+    link.click();
 
-document.getElementById("gifBtn").onclick =
-  async () => {
+  });
 
-    if (!sourceReady) return;
+
+/* =========================================================
+   GIF
+========================================================= */
+
+document
+  .getElementById("gifBtn")
+  .addEventListener("click", () => {
+
+    if (!sourceReady) {
+
+      statusEl.textContent =
+        "Please load a background image first.";
+
+      return;
+    }
+
 
     statusEl.textContent =
-      "Generating animated GIF…";
+      "Preparing GIF…";
+
+
+    /*
+       Speed slider:
+
+       Lower value = shorter frame delay
+       Higher value = longer frame delay
+    */
+
+    const frameDelay =
+      Number(speedInput.value);
 
 
     const gif =
@@ -626,82 +930,103 @@ document.getElementById("gifBtn").onclick =
 
 
     /*
-       3-second animation.
+       45 frames across 3 seconds.
 
-       45 frames gives the upward
-       transition a smoother appearance.
+       This gives the upward light shot
+       enough frames to look smooth.
     */
 
-    const frames = 45;
-
-    const delay =
-      Number(speedInput.value);
+    const totalFrames = 45;
 
 
     for (
-      let i = 0;
-      i < frames;
-      i++
+      let frame = 0;
+      frame < totalFrames;
+      frame++
     ) {
 
-      const time =
-        (i / frames) * 3.0;
+      const frameTime =
+        (frame / totalFrames) * 3;
 
 
-      draw(time);
+      draw(frameTime);
 
 
       gif.addFrame(
         ctx,
         {
           copy: true,
-          delay: delay
+          delay: frameDelay
         }
       );
 
     }
 
 
+    /*
+       GIF progress
+    */
+
     gif.on(
       "progress",
-      p => {
+      progress => {
 
         statusEl.textContent =
-          `Generating animated GIF… ${Math.round(p * 100)}%`;
+          `Generating GIF… ${Math.round(progress * 100)}%`;
+
+      }
+    );
+
+
+    /*
+       GIF complete
+    */
+
+    gif.on(
+      "finished",
+      blob => {
+
+        const objectURL =
+          URL.createObjectURL(blob);
+
+
+        const link =
+          document.createElement("a");
+
+
+        link.download =
+          "of-ambition-and-grind-banner.gif";
+
+
+        link.href =
+          objectURL;
+
+
+        link.click();
+
+
+        setTimeout(() => {
+
+          URL.revokeObjectURL(
+            objectURL
+          );
+
+        }, 10000);
+
+
+        statusEl.textContent =
+          "GIF ready.";
 
       }
     );
 
 
     gif.on(
-      "finished",
-      blob => {
-
-        const a =
-          document.createElement("a");
-
-        a.download =
-          "of-ambition-and-grind-banner.gif";
-
-        a.href =
-          URL.createObjectURL(blob);
-
-        a.click();
-
-
-        setTimeout(
-          () => URL.revokeObjectURL(a.href),
-          10000
-        );
-
+      "abort",
+      () => {
 
         statusEl.textContent =
-          "GIF ready.";
-
-
-        draw(
-          (performance.now() - start) / 1000
-        );
+          "GIF generation cancelled.";
 
       }
     );
@@ -709,4 +1034,4 @@ document.getElementById("gifBtn").onclick =
 
     gif.render();
 
-  };
+  });
