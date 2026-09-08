@@ -1,200 +1,158 @@
 <!doctype html>
 <html lang="en">
-
 <head>
-
   <meta charset="utf-8">
-
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1"
-  >
-
-  <title>
-    Of Ambition and Grind — Banner Generator
-  </title>
-
-  <link
-    rel="stylesheet"
-    href="style.css"
-  >
-
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Of Ambition and Grind — Banner Generator</title>
+  <link rel="stylesheet" href="style.css">
 </head>
-
 
 <body>
 
   <main class="app">
 
-
     <header class="topbar">
-
       <div>
-
-        <p class="eyebrow">
-          EMAIL SIGNATURE BANNER
-        </p>
-
-        <h1>
-          Of Ambition and Grind
-        </h1>
-
-        <p class="muted">
-          600 × 200 px · animated light transition · no author name
-        </p>
-
+        <p class="eyebrow">EMAIL SIGNATURE BANNER</p>
+        <h1>Of Ambition and Grind</h1>
+        <p class="muted">600 × 200 px · animated editorial banner</p>
       </div>
 
-
-      <div class="badge">
-        GITHUB PAGES READY
-      </div>
-
+      <div class="badge">GITHUB PAGES READY</div>
     </header>
 
-
-    <section class="workspace">
-
-
-      <!-- =========================
-           CONTROLS
-      ========================== -->
+    <section class="grid">
 
       <aside class="panel">
 
+        <h2>Content</h2>
 
-        <div class="field">
+        <label>
+          Background image
+          <input id="imageInput" type="file" accept="image/*">
+        </label>
 
-          <label for="imageInput">
-            Background image
-          </label>
-
-          <input
-            id="imageInput"
-            type="file"
-            accept="image/*"
-          >
-
-        </div>
-
-
-        <div class="field">
-
-          <label for="titleInput">
-            Book title
-          </label>
-
+        <label>
+          Book title
           <input
             id="titleInput"
             type="text"
             value="OF AMBITION AND GRIND"
           >
+        </label>
 
-        </div>
-
-
-        <div class="field">
-
-          <label for="subInput">
-            Supporting text
-          </label>
-
+        <label>
+          Supporting text
           <input
             id="subInput"
             type="text"
             value="A NEW BOOK"
           >
+        </label>
 
-        </div>
-
-
-        <div class="field">
-
-          <label for="ctaInput">
-            Call to action
-          </label>
-
+        <label>
+          Call to action
           <input
             id="ctaInput"
             type="text"
             value="AVAILABLE NOW"
           >
+        </label>
 
-        </div>
-
-
-        <div class="field">
-
-          <label for="urlInput">
-            Purchase URL
-          </label>
-
+        <label>
+          Purchase URL
           <input
             id="urlInput"
             type="url"
             placeholder="https://..."
           >
+        </label>
+
+
+        <h2 class="section-title">Appearance</h2>
+
+        <div class="two-col">
+
+          <label>
+            Opening colour
+            <input
+              id="openingColorInput"
+              type="color"
+              value="#000000"
+            >
+          </label>
+
+          <label>
+            Reveal colour
+            <input
+              id="revealColorInput"
+              type="color"
+              value="#ffffff"
+            >
+          </label>
 
         </div>
 
 
-        <!-- =========================
-             OVERLAY CONTROL
-        ========================== -->
+        <label>
+          Photo visibility
 
-        <div class="controls">
-
-
-          <div class="range-field">
-
-            <div class="range-heading">
-
-              <label for="overlayInput">
-                Overlay transparency
-              </label>
-
-              <span id="overlayValue">
-                30%
-              </span>
-
-            </div>
-
-
+          <div class="range-row">
             <input
-              id="overlayInput"
+              id="photoInput"
               type="range"
               min="0"
               max="100"
-              value="30"
+              value="28"
             >
 
-
-            <p class="hint">
-              0% = strongest overlay · 100% = no overlay
-            </p>
-
+            <output id="photoValue">28%</output>
           </div>
 
-
-          <!-- =========================
-               SPEED
-          ========================== -->
-
-          <div class="range-field">
-
-            <div class="range-heading">
-
-              <label for="speedInput">
-                Animation speed
-              </label>
-
-              <span id="speedValue">
-                Normal
-              </span>
-
-            </div>
+          <span class="hint">
+            Controls how much of the photograph remains visible through the overlays.
+          </span>
+        </label>
 
 
+        <label>
+          Reveal softness
+
+          <div class="range-row">
+            <input
+              id="softnessInput"
+              type="range"
+              min="0"
+              max="100"
+              value="42"
+            >
+
+            <output id="softnessValue">42%</output>
+          </div>
+        </label>
+
+
+        <label>
+          Reveal width
+
+          <div class="range-row">
+            <input
+              id="spreadInput"
+              type="range"
+              min="35"
+              max="100"
+              value="82"
+            >
+
+            <output id="spreadValue">82%</output>
+          </div>
+        </label>
+
+
+        <label>
+          Animation speed
+
+          <div class="range-row">
             <input
               id="speedInput"
               type="range"
@@ -203,15 +161,10 @@
               value="80"
             >
 
+            <output id="speedValue">80%</output>
           </div>
+        </label>
 
-
-        </div>
-
-
-        <!-- =========================
-             BUTTONS
-        ========================== -->
 
         <div class="buttons">
 
@@ -219,31 +172,19 @@
             Download PNG
           </button>
 
-
-          <button
-            id="gifBtn"
-            class="primary"
-          >
+          <button id="gifBtn" class="primary">
             Generate GIF
           </button>
 
         </div>
 
 
-        <p
-          id="status"
-          class="status"
-        >
-          Ready.
+        <p id="status" class="status">
+          Loading original book image…
         </p>
-
 
       </aside>
 
-
-      <!-- =========================
-           PREVIEW
-      ========================== -->
 
       <section class="preview-panel">
 
@@ -257,28 +198,19 @@
 
         </div>
 
-
         <div class="size-note">
           Final email image: 600 × 200 px
         </div>
 
       </section>
 
-
     </section>
 
   </main>
 
 
-  <!-- GIF LIBRARY -->
-
   <script src="https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.js"></script>
-
-
-  <!-- APPLICATION -->
-
   <script src="app.js"></script>
 
 </body>
-
 </html>
