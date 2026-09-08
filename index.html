@@ -1,325 +1,213 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Of Ambition and Grind email banner generator">
+  <title>Of Ambition and Grind — Banner Generator</title>
 
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
-  >
-
-  <title>Of Ambition and Grind — Banner</title>
-
-  <link
-    rel="stylesheet"
-    href="style.css"
-  >
+  <link rel="stylesheet" href="./style.css">
 </head>
 
 <body>
-
   <main class="app">
 
-    <header class="header">
-
+    <header class="topbar">
       <div>
-        <p class="eyebrow">
-          EMAIL BANNER
-        </p>
-
-        <h1>
-          Of Ambition and Grind
-        </h1>
-
-        <p class="description">
-          Create and preview the animated promotional banner.
-        </p>
+        <p class="eyebrow">EMAIL SIGNATURE BANNER</p>
+        <h1>Of Ambition and Grind</h1>
+        <p class="muted">600 × 200 px · animated promotional banner</p>
       </div>
 
+      <div class="badge">GITHUB PAGES READY</div>
     </header>
 
+    <section class="grid">
 
-    <section class="workspace">
+      <aside class="panel">
 
-      <!-- =========================================
-           PREVIEW
-      ========================================== -->
+        <h2>Content</h2>
 
-      <div class="preview-panel">
-
-        <div class="panel-title">
-          Preview
-        </div>
-
-        <div class="canvas-wrap">
-
-          <canvas
-            id="previewCanvas"
-            width="600"
-            height="200"
-          ></canvas>
-
-          <div
-            id="imageError"
-            class="image-error"
-            hidden
-          >
-            Could not load the banner image.
-            Make sure the file is located at
-            <strong>assets/book-background.png</strong>
-          </div>
-
-        </div>
-
-        <div class="preview-info">
-          600 × 200 px
-        </div>
-
-      </div>
-
-
-      <!-- =========================================
-           CONTROLS
-      ========================================== -->
-
-      <div class="controls-panel">
-
-        <div class="panel-title">
-          Banner settings
-        </div>
-
-
-        <div class="field">
-
-          <label for="bookTitle">
-            Book title
-          </label>
-
+        <label for="imageInput">
+          Background image
           <input
-            id="bookTitle"
+            id="imageInput"
+            type="file"
+            accept="image/png,image/jpeg,image/webp,image/gif"
+          >
+          <span class="hint">
+            Choose another image from your computer. The default image is loaded from the assets folder.
+          </span>
+        </label>
+
+        <label for="titleInput">
+          Book title
+          <input
+            id="titleInput"
             type="text"
             value="OF AMBITION AND GRIND"
           >
+        </label>
 
-        </div>
-
-
-        <div class="field">
-
-          <label for="supportingText">
-            Supporting text
-          </label>
-
+        <label for="subInput">
+          Supporting text
           <input
-            id="supportingText"
+            id="subInput"
             type="text"
-            value="A practical guide to turning ambition into action."
+            value="A NEW BOOK"
           >
+        </label>
 
-        </div>
-
-
-        <div class="field">
-
-          <label for="ctaText">
-            CTA
-          </label>
-
+        <label for="ctaInput">
+          Call to action
           <input
-            id="ctaText"
+            id="ctaInput"
             type="text"
-            value="READ THE BOOK"
+            value="AVAILABLE NOW"
           >
+        </label>
 
-        </div>
-
-
-        <div class="field">
-
-          <label for="purchaseUrl">
-            Purchase URL
-          </label>
-
+        <label for="urlInput">
+          Purchase URL
           <input
-            id="purchaseUrl"
+            id="urlInput"
             type="url"
             placeholder="https://..."
           >
+        </label>
 
-        </div>
+        <h2 class="section-title">Appearance</h2>
 
+        <div class="two-col">
 
-        <div class="two-column">
-
-          <div class="field">
-
-            <label for="openingColor">
-              Opening colour
-            </label>
-
+          <label for="openingColorInput">
+            Opening colour
             <input
-              id="openingColor"
+              id="openingColorInput"
               type="color"
               value="#000000"
             >
+          </label>
 
-          </div>
-
-
-          <div class="field">
-
-            <label for="revealColor">
-              Reveal colour
-            </label>
-
+          <label for="revealColorInput">
+            Reveal colour
             <input
-              id="revealColor"
+              id="revealColorInput"
               type="color"
               value="#ffffff"
             >
-
-          </div>
-
-        </div>
-
-
-        <div class="slider-field">
-
-          <div class="slider-heading">
-
-            <label for="photoVisibility">
-              Photo visibility
-            </label>
-
-            <span id="photoVisibilityValue">
-              28
-            </span>
-
-          </div>
-
-          <input
-            id="photoVisibility"
-            type="range"
-            min="0"
-            max="100"
-            value="28"
-          >
+          </label>
 
         </div>
 
+        <label for="photoInput">
+          Photo visibility
 
-        <div class="slider-field">
-
-          <div class="slider-heading">
-
-            <label for="revealSoftness">
-              Reveal softness
-            </label>
-
-            <span id="revealSoftnessValue">
-              42
-            </span>
-
+          <div class="range-row">
+            <input
+              id="photoInput"
+              type="range"
+              min="0"
+              max="100"
+              value="24"
+            >
+            <output id="photoValue">24%</output>
           </div>
 
-          <input
-            id="revealSoftness"
-            type="range"
-            min="0"
-            max="100"
-            value="42"
-          >
+          <span class="hint">
+            Controls how strongly the photograph remains visible underneath the overlay.
+          </span>
+        </label>
 
-        </div>
+        <label for="sharpnessInput">
+          Reveal sharpness
 
-
-        <div class="slider-field">
-
-          <div class="slider-heading">
-
-            <label for="revealWidth">
-              Reveal width
-            </label>
-
-            <span id="revealWidthValue">
-              82
-            </span>
-
+          <div class="range-row">
+            <input
+              id="sharpnessInput"
+              type="range"
+              min="1"
+              max="100"
+              value="88"
+            >
+            <output id="sharpnessValue">88%</output>
           </div>
+        </label>
 
-          <input
-            id="revealWidth"
-            type="range"
-            min="35"
-            max="100"
-            value="82"
-          >
+        <label for="spreadInput">
+          Reveal spread
 
-        </div>
-
-
-        <div class="slider-field">
-
-          <div class="slider-heading">
-
-            <label for="animationSpeed">
-              Animation speed
-            </label>
-
-            <span id="animationSpeedValue">
-              80
-            </span>
-
+          <div class="range-row">
+            <input
+              id="spreadInput"
+              type="range"
+              min="35"
+              max="100"
+              value="78"
+            >
+            <output id="spreadValue">78%</output>
           </div>
+        </label>
 
-          <input
-            id="animationSpeed"
-            type="range"
-            min="40"
-            max="140"
-            value="80"
-          >
+        <label for="speedInput">
+          Animation speed
 
-        </div>
-
+          <div class="range-row">
+            <input
+              id="speedInput"
+              type="range"
+              min="40"
+              max="140"
+              value="80"
+            >
+            <output id="speedValue">80%</output>
+          </div>
+        </label>
 
         <div class="buttons">
-
-          <button
-            id="resetPreview"
-            type="button"
-            class="secondary-button"
-          >
-            Restart animation
+          <button id="pngBtn" type="button">
+            Download PNG
           </button>
 
-          <button
-            id="generateGif"
-            type="button"
-            class="primary-button"
-          >
+          <button id="gifBtn" class="primary" type="button">
             Generate GIF
           </button>
-
         </div>
 
-      </div>
+        <p id="status" class="status" aria-live="polite">
+          Loading background image…
+        </p>
+
+      </aside>
+
+      <section class="preview-panel">
+
+        <div class="preview-wrap">
+          <canvas
+            id="canvas"
+            width="600"
+            height="200"
+          ></canvas>
+        </div>
+
+        <div class="size-note">
+          Final email image: 600 × 200 px
+        </div>
+
+      </section>
 
     </section>
 
   </main>
 
-
-  <!-- GIF library is ONLY needed when exporting.
-       It does NOT control the preview animation. -->
-
+  <!-- GIF library -->
   <script
     src="https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.js"
+    defer
   ></script>
 
-  <script
-    src="app.js"
-  ></script>
+  <!-- Application -->
+  <script src="./app.js" defer></script>
 
 </body>
 </html>
