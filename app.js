@@ -45,6 +45,26 @@ function easeInOut(t) {
     : 1 - Math.pow(-2 * t + 2, 3) / 2;
 }
 
+function hexToRgba(hex, alpha) {
+  const clean = hex.replace("#", "");
+
+  let r;
+  let g;
+  let b;
+
+  if (clean.length === 3) {
+    r = parseInt(clean[0] + clean[0], 16);
+    g = parseInt(clean[1] + clean[1], 16);
+    b = parseInt(clean[2] + clean[2], 16);
+  } else {
+    r = parseInt(clean.substring(0, 2), 16);
+    g = parseInt(clean.substring(2, 4), 16);
+    b = parseInt(clean.substring(4, 6), 16);
+  }
+
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
 function drawCoverImage() {
   if (!imageReady) return;
 
@@ -77,17 +97,44 @@ function drawCoverImage() {
   );
 }
 
+function drawOpeningOverlay() {
+  ctx.save();
+
+  ctx.fillStyle = settings.openingColor;
+
+  const alpha =
+    0.72 -
+    (settings.photoVisibility / 100) * 0.52;
+
+  ctx.globalAlpha = clamp(alpha, 0.15, 0.80);
+
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.restore();
+}
+
+
 /*
- * THE REVEAL SHAPE
- *
- * Important:
- * The animation still travels exactly the same way as before.
- *
- * Only the silhouette has been vertically mirrored.
- *
- * The reference shape is a broad, curved form whose lower section
- * narrows into the reveal. It is NOT made from rays.
- */
+========================================================
+  REVEAL SHAPE
+========================================================
+
+  IMPORTANT:
+
+  The animation progress is unchanged.
+
+  ONLY THE SHAPE ITSELF is vertically flipped.
+
+  The canvas/background/text are NOT flipped.
+
+  This is the actual vertical mirror:
+      y  ->  H - y
+
+  So the overlay contour is turned upside down while
+  the rest of the animation remains untouched.
+========================================================
+*/
+
 function drawReveal(progress) {
   const p = clamp(progress, 0, 1);
 
@@ -100,13 +147,11 @@ function drawReveal(progress) {
   const softness =
     settings.revealSoftness / 100;
 
-  /*
-   * Keep the original animation movement:
-   * the reveal progresses upward from the bottom.
-   *
-   * Do NOT change this origin to the top.
-   */
   const originX = W * 0.5;
+
+  /*
+   * Keep the SAME animation timing and size progression.
+   */
   const originY = H + 18;
 
   const maxWidth = W * spread;
@@ -118,33 +163,49 @@ function drawReveal(progress) {
   const currentHeight =
     maxHeight * Math.pow(p, 0.70);
 
-  const left = originX - currentWidth / 2;
-  const right = originX + currentWidth / 2;
+  /*
+   * Original shape coordinates.
+   */
+  const left =
+    originX - currentWidth / 2;
 
-  const top = originY - currentHeight;
+  const right =
+    originX + currentWidth / 2;
+
+  const top =
+    originY - currentHeight;
 
   /*
-   * The shape is deliberately constructed with the
-   * reference orientation.
+   * ----------------------------------------------------
+   * VERTICAL FLIP
+   * ----------------------------------------------------
    *
-   * The broad curved section is toward the upper portion,
-   * while the lower portion tightens toward the centre.
+   * We draw the shape into its own coordinate system,
+   * then mirror ONLY that shape vertically.
+   *
+   * Nothing else on the canvas is affected.
    */
 
   ctx.save();
 
+  /*
+   * Move to bottom edge and flip the Y axis.
+   */
+  ctx.translate(0, H);
+  ctx.scale(1, -1);
+
   ctx.beginPath();
 
   /*
-   * Start at the lower centre.
+   * Original lower centre.
    */
-  ctx.moveTo(originX, originY);
+  ctx.moveTo(
+    originX,
+    originY
+  );
 
   /*
-   * LEFT SIDE
-   *
-   * Instead of a straight ray, this creates the long
-   * continuous curved edge seen in the reference.
+   * LEFT CONTOUR
    */
   ctx.bezierCurveTo(
     originX - currentWidth * 0.10,
@@ -158,7 +219,7 @@ function drawReveal(progress) {
   );
 
   /*
-   * Continue upward into the broad curved shoulder.
+   * BROAD CURVED TOP
    */
   ctx.bezierCurveTo(
     left + currentWidth * 0.30,
@@ -172,9 +233,7 @@ function drawReveal(progress) {
   );
 
   /*
-   * RIGHT SIDE
-   *
-   * Mirror the same contour.
+   * RIGHT CONTOUR
    */
   ctx.bezierCurveTo(
     right - currentWidth * 0.50,
@@ -201,12 +260,15 @@ function drawReveal(progress) {
   ctx.closePath();
 
   /*
-   * Soft edge is created with a subtle shadow rather
-   * than multiple rays or separate shapes.
+   * Soft edge.
    */
   if (softness > 0) {
-    ctx.shadowColor = hexToRgba(revealColor, 0.20);
-    ctx.shadowBlur = 8 + softness * 18;
+    ctx.shadowColor =
+      hexToRgba(revealColor, 0.20);
+
+    ctx.shadowBlur =
+      8 + softness * 18;
+
     ctx.shadowOffsetX = 0;
     ctx.shadowOffsetY = 0;
   }
@@ -214,27 +276,9 @@ function drawReveal(progress) {
   ctx.fillStyle = revealColor;
   ctx.fill();
 
-  ctx.shadowColor = "transparent";
-  ctx.shadowBlur = 0;
-
   ctx.restore();
 }
 
-function drawOpeningOverlay() {
-  ctx.save();
-
-  ctx.fillStyle = settings.openingColor;
-
-  const alpha =
-    0.72 -
-    (settings.photoVisibility / 100) * 0.52;
-
-  ctx.globalAlpha = clamp(alpha, 0.15, 0.80);
-
-  ctx.fillRect(0, 0, W, H);
-
-  ctx.restore();
-}
 
 function drawFinalOverlay() {
   ctx.save();
@@ -242,34 +286,43 @@ function drawFinalOverlay() {
   ctx.fillStyle = settings.revealColor;
   ctx.globalAlpha = 0.96;
 
-  ctx.fillRect(0, 0, W, H);
+  ctx.fillRect(
+    0,
+    0,
+    W,
+    H
+  );
 
   ctx.restore();
 }
 
+
 function drawText(progress) {
   const p = clamp(progress, 0, 1);
 
-  /*
-   * White text during opening.
-   * Black text after reveal.
-   */
-  const textTransition = clamp((p - 0.40) / 0.35, 0, 1);
+  const textTransition =
+    clamp(
+      (p - 0.40) / 0.35,
+      0,
+      1
+    );
 
-  const whiteAlpha = 1 - textTransition;
-  const blackAlpha = textTransition;
+  const whiteAlpha =
+    1 - textTransition;
+
+  const blackAlpha =
+    textTransition;
 
   ctx.save();
 
+  ctx.textBaseline = "middle";
+  ctx.textAlign = "left";
+
   /*
-   * Main title
+   * TITLE
    */
   ctx.font =
-    '700 27px Arial, Helvetica, sans-serif';
-
-  ctx.textBaseline = "middle";
-
-  ctx.textAlign = "left";
+    "700 27px Arial, Helvetica, sans-serif";
 
   ctx.fillStyle =
     `rgba(255,255,255,${whiteAlpha})`;
@@ -290,10 +343,10 @@ function drawText(progress) {
   );
 
   /*
-   * Supporting text
+   * SUPPORTING TEXT
    */
   ctx.font =
-    '400 13px Arial, Helvetica, sans-serif';
+    "400 13px Arial, Helvetica, sans-serif";
 
   ctx.fillStyle =
     `rgba(255,255,255,${whiteAlpha})`;
@@ -317,7 +370,7 @@ function drawText(progress) {
    * CTA
    */
   ctx.font =
-    '700 12px Arial, Helvetica, sans-serif';
+    "700 12px Arial, Helvetica, sans-serif";
 
   ctx.fillStyle =
     `rgba(255,255,255,${whiteAlpha})`;
@@ -340,51 +393,44 @@ function drawText(progress) {
   ctx.restore();
 }
 
-function hexToRgba(hex, alpha) {
-  const clean = hex.replace("#", "");
-
-  let r;
-  let g;
-  let b;
-
-  if (clean.length === 3) {
-    r = parseInt(clean[0] + clean[0], 16);
-    g = parseInt(clean[1] + clean[1], 16);
-    b = parseInt(clean[2] + clean[2], 16);
-  } else {
-    r = parseInt(clean.substring(0, 2), 16);
-    g = parseInt(clean.substring(2, 4), 16);
-    b = parseInt(clean.substring(4, 6), 16);
-  }
-
-  return `rgba(${r},${g},${b},${alpha})`;
-}
 
 /*
- * Preview timeline
- *
- * The animation itself is NOT vertically reversed.
- *
- * 0.00 - 0.30  : dark opening
- * 0.30 - 0.70  : reveal animation
- * 0.70 - 1.00  : final light state
- */
+========================================================
+  PREVIEW TIMELINE
+========================================================
+*/
+
 function renderPreview(progress) {
   if (!imageReady) return;
 
-  ctx.clearRect(0, 0, W, H);
+  ctx.clearRect(
+    0,
+    0,
+    W,
+    H
+  );
 
   drawCoverImage();
 
+  /*
+   * OPENING
+   */
   if (progress < 0.30) {
+
     drawOpeningOverlay();
 
     const openingProgress =
       progress / 0.30;
 
-    drawText(openingProgress * 0.15);
+    drawText(
+      openingProgress * 0.15
+    );
 
+  /*
+   * REVEAL
+   */
   } else if (progress < 0.70) {
+
     drawOpeningOverlay();
 
     const revealProgress =
@@ -398,12 +444,23 @@ function renderPreview(progress) {
       revealProgress
     );
 
+  /*
+   * FINAL
+   */
   } else {
+
     drawFinalOverlay();
 
     drawText(1);
   }
 }
+
+
+/*
+========================================================
+  ANIMATION LOOP
+========================================================
+*/
 
 function previewLoop(now) {
   const elapsed =
@@ -415,56 +472,97 @@ function previewLoop(now) {
   const duration =
     4200 / speedFactor;
 
-  let progress =
+  const progress =
     (elapsed % duration) / duration;
 
   renderPreview(progress);
 
-  requestAnimationFrame(previewLoop);
+  requestAnimationFrame(
+    previewLoop
+  );
 }
 
-requestAnimationFrame(previewLoop);
+requestAnimationFrame(
+  previewLoop
+);
 
 
-/* --------------------------------------------------
-   CONTROL BINDINGS
--------------------------------------------------- */
+/*
+========================================================
+  CONTROLS
+========================================================
+*/
 
 function bindInput(id, property) {
-  const element = document.getElementById(id);
+  const element =
+    document.getElementById(id);
 
   if (!element) return;
 
-  element.addEventListener("input", () => {
-    settings[property] = element.value;
-  });
+  element.addEventListener(
+    "input",
+    () => {
+      settings[property] =
+        element.value;
+    }
+  );
 }
 
 function bindValue(id, property) {
-  const element = document.getElementById(id);
+  const element =
+    document.getElementById(id);
 
   if (!element) return;
 
-  element.addEventListener("input", () => {
-    settings[property] = Number(element.value);
+  element.addEventListener(
+    "input",
+    () => {
 
-    const output =
-      document.getElementById(`${id}Value`);
+      settings[property] =
+        Number(element.value);
 
-    if (output) {
-      output.textContent =
-        element.value;
+      const output =
+        document.getElementById(
+          `${id}Value`
+        );
+
+      if (output) {
+        output.textContent =
+          element.value;
+      }
     }
-  });
+  );
 }
 
-bindInput("bookTitle", "title");
-bindInput("supportingText", "supporting");
-bindInput("ctaText", "cta");
-bindInput("purchaseUrl", "url");
+bindInput(
+  "bookTitle",
+  "title"
+);
 
-bindInput("openingColor", "openingColor");
-bindInput("revealColor", "revealColor");
+bindInput(
+  "supportingText",
+  "supporting"
+);
+
+bindInput(
+  "ctaText",
+  "cta"
+);
+
+bindInput(
+  "purchaseUrl",
+  "url"
+);
+
+bindInput(
+  "openingColor",
+  "openingColor"
+);
+
+bindInput(
+  "revealColor",
+  "revealColor"
+);
 
 bindValue(
   "photoVisibility",
@@ -487,22 +585,30 @@ bindValue(
 );
 
 
-/* --------------------------------------------------
-   GIF EXPORT
--------------------------------------------------- */
+/*
+========================================================
+  GIF GENERATION
+========================================================
+*/
 
 async function generateGif() {
+
   if (typeof GIF === "undefined") {
-    alert("GIF library has not loaded yet.");
+    alert(
+      "GIF library has not loaded yet."
+    );
     return;
   }
 
   const button =
-    document.getElementById("generateGif");
+    document.getElementById(
+      "generateGif"
+    );
 
   if (button) {
     button.disabled = true;
-    button.textContent = "Generating...";
+    button.textContent =
+      "Generating...";
   }
 
   const gif = new GIF({
@@ -517,48 +623,70 @@ async function generateGif() {
   const frameCount = 60;
   const frameDelay = 55;
 
-  for (let i = 0; i < frameCount; i++) {
+  for (
+    let i = 0;
+    i < frameCount;
+    i++
+  ) {
+
     const progress =
       i / (frameCount - 1);
 
     renderPreview(progress);
 
-    gif.addFrame(ctx, {
-      copy: true,
-      delay: frameDelay
-    });
+    gif.addFrame(
+      ctx,
+      {
+        copy: true,
+        delay: frameDelay
+      }
+    );
   }
 
-  gif.on("finished", blob => {
-    const url =
-      URL.createObjectURL(blob);
+  gif.on(
+    "finished",
+    blob => {
 
-    const link =
-      document.createElement("a");
+      const url =
+        URL.createObjectURL(blob);
 
-    link.href = url;
-    link.download =
-      "of-ambition-and-grind-banner.gif";
+      const link =
+        document.createElement("a");
 
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
+      link.href = url;
 
-    setTimeout(() => {
-      URL.revokeObjectURL(url);
-    }, 1000);
+      link.download =
+        "of-ambition-and-grind-banner.gif";
 
-    if (button) {
-      button.disabled = false;
-      button.textContent = "Generate GIF";
+      document.body.appendChild(link);
+
+      link.click();
+
+      link.remove();
+
+      setTimeout(
+        () => {
+          URL.revokeObjectURL(url);
+        },
+        1000
+      );
+
+      if (button) {
+        button.disabled = false;
+        button.textContent =
+          "Generate GIF";
+      }
     }
-  });
+  );
 
   gif.render();
 }
 
+
 const gifButton =
-  document.getElementById("generateGif");
+  document.getElementById(
+    "generateGif"
+  );
 
 if (gifButton) {
   gifButton.addEventListener(
@@ -568,16 +696,25 @@ if (gifButton) {
 }
 
 
-/* --------------------------------------------------
-   RESET PREVIEW
--------------------------------------------------- */
+/*
+========================================================
+  RESET
+========================================================
+*/
 
 const resetButton =
-  document.getElementById("resetPreview");
+  document.getElementById(
+    "resetPreview"
+  );
 
 if (resetButton) {
-  resetButton.addEventListener("click", () => {
-    animationStart =
-      performance.now();
-  });
+
+  resetButton.addEventListener(
+    "click",
+    () => {
+
+      animationStart =
+        performance.now();
+    }
+  );
 }
