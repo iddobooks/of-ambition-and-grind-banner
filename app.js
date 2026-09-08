@@ -27,139 +27,236 @@ const status = document.getElementById("status");
 
 let backgroundImage = null;
 let previewStart = performance.now();
+let objectUrl = null;
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
 
 function hexToRgb(hex) {
-  const clean = hex.replace("#", "");
-  const n = parseInt(clean, 16);
+  const clean = String(hex || "#000000").replace("#", "");
+
+  if (clean.length !== 6) {
+    return { r: 0, g: 0, b: 0 };
+  }
+
+  const value = parseInt(clean, 16);
 
   return {
-    r: (n >> 16) & 255,
-    g: (n >> 8) & 255,
-    b: n & 255
+    r: (value >> 16) & 255,
+    g: (value >> 8) & 255,
+    b: value & 255
   };
 }
 
 function rgba(hex, alpha) {
-  const c = hexToRgb(hex);
-  return `rgba(${c.r},${c.g},${c.b},${alpha})`;
+  const rgb = hexToRgb(hex);
+  return `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alpha})`;
 }
 
 function getSettings() {
   return {
-    title: titleInput.value.trim() || "OF AMBITION AND GRIND",
-    sub: subInput.value.trim(),
-    cta: ctaInput.value.trim(),
-    openingColor: openingColorInput.value,
-    revealColor: revealColorInput.value,
-    photoVisibility: Number(photoInput.value) / 100,
-    revealOpacity: Number(revealOpacityInput.value) / 100,
-    transparent: transparentInput.checked,
-    speed: Number(speedInput.value) / 100
+    title:
+      titleInput.value.trim() ||
+      "OF AMBITION AND GRIND",
+
+    sub:
+      subInput.value.trim(),
+
+    cta:
+      ctaInput.value.trim(),
+
+    openingColor:
+      openingColorInput.value || "#000000",
+
+    revealColor:
+      revealColorInput.value || "#ffffff",
+
+    photoVisibility:
+      Number(photoInput.value || 24) / 100,
+
+    revealOpacity:
+      Number(revealOpacityInput.value || 100) / 100,
+
+    transparent:
+      transparentInput.checked,
+
+    speed:
+      Number(speedInput.value || 80) / 100
   };
 }
 
 function updateOutputs() {
-  photoValue.textContent = `${photoInput.value}%`;
-  revealOpacityValue.textContent = `${revealOpacityInput.value}%`;
-  speedValue.textContent = `${speedInput.value}%`;
+  if (photoValue) {
+    photoValue.textContent =
+      `${photoInput.value}%`;
+  }
+
+  if (revealOpacityValue) {
+    revealOpacityValue.textContent =
+      `${revealOpacityInput.value}%`;
+  }
+
+  if (speedValue) {
+    speedValue.textContent =
+      `${speedInput.value}%`;
+  }
 }
 
-function drawCoverImage(image, alpha = 1) {
-  if (!image) {
-    ctx.fillStyle = "#222";
-    ctx.fillRect(0, 0, W, H);
+/* ---------------------------------------------------------
+   DRAW BACKGROUND
+--------------------------------------------------------- */
+
+function drawBackground(settings) {
+  ctx.fillStyle = "#111111";
+  ctx.fillRect(0, 0, W, H);
+
+  if (!backgroundImage) {
     return;
   }
 
   const scale = Math.max(
-    W / image.width,
-    H / image.height
+    W / backgroundImage.width,
+    H / backgroundImage.height
   );
 
-  const dw = image.width * scale;
-  const dh = image.height * scale;
+  const width =
+    backgroundImage.width * scale;
 
-  const dx = (W - dw) / 2;
-  const dy = (H - dh) / 2;
+  const height =
+    backgroundImage.height * scale;
+
+  const x =
+    (W - width) / 2;
+
+  const y =
+    (H - height) / 2;
 
   ctx.save();
-  ctx.globalAlpha = alpha;
-  ctx.drawImage(image, dx, dy, dw, dh);
+
+  ctx.globalAlpha =
+    settings.photoVisibility;
+
+  ctx.drawImage(
+    backgroundImage,
+    x,
+    y,
+    width,
+    height
+  );
+
   ctx.restore();
 }
 
+/* ---------------------------------------------------------
+   OPENING OVERLAY
+--------------------------------------------------------- */
 
-/*
-  ============================================================
-  DOWNWARD-POINTING SEMICIRCLE REVEAL
-  ============================================================
+function drawOpeningOverlay(settings) {
+  const opacity =
+    1 - settings.photoVisibility;
 
-  This is ONE shape.
+  if (opacity <= 0) {
+    return;
+  }
 
-  It is NOT:
-  - rays
-  - triangles
-  - a fan
-  - a radial burst
-  - a rotating shape
+  ctx.save();
 
-  The shape has:
+  ctx.fillStyle =
+    rgba(
+      settings.openingColor,
+      opacity
+    );
 
-       FLAT TOP
-  -------------------
-       \           /
-        \         /
-         \       /
-          \_____/
-             ↓
+  ctx.fillRect(
+    0,
+    0,
+    W,
+    H
+  );
 
-  The curved edge points downward.
+  ctx.restore();
+}
 
-  The animation moves this same shape through the banner.
-*/
-function drawDownwardSemicircle(progress, settings) {
-  const p = clamp(progress, 0, 1);
+/* ---------------------------------------------------------
+   DOWNWARD-POINTING SEMICIRCLE
 
-  if (p <= 0 || settings.transparent) {
+   This is ONE clean shape.
+
+                 FLAT EDGE
+       -------------------------
+        \                     /
+         \                   /
+          \                 /
+           \_______________/
+                  ↓
+
+   The curved side points downward.
+
+--------------------------------------------------------- */
+
+function drawRevealSemicircle(
+  progress,
+  settings
+) {
+  if (settings.transparent) {
+    return;
+  }
+
+  const p =
+    clamp(progress, 0, 1);
+
+  if (p <= 0) {
     return;
   }
 
   /*
-    Radius controls the width of the semicircle.
-
-    The radius is deliberately larger than half the banner width
-    so the semicircle extends beyond the left and right edges.
+    Make the semicircle wider than
+    the banner so its edges remain
+    outside the canvas.
   */
-  const radius = W * 0.66;
+  const radius =
+    W * 0.72;
 
-  const centerX = W / 2;
+  const centerX =
+    W / 2;
 
   /*
-    Start above the banner and move downward.
+    Move the complete shape vertically.
+
+    At progress 0:
+      the semicircle is above the banner.
+
+    At progress 1:
+      it has moved below the banner.
   */
-  const startY = -radius * 1.05;
-  const endY = H + radius * 0.18;
+  const startY =
+    -radius * 0.95;
+
+  const endY =
+    H + radius * 0.20;
 
   const centerY =
-    startY + (endY - startY) * p;
+    startY +
+    (endY - startY) * p;
 
   ctx.save();
 
-  ctx.fillStyle = rgba(
-    settings.revealColor,
-    settings.revealOpacity
-  );
+  ctx.fillStyle =
+    rgba(
+      settings.revealColor,
+      settings.revealOpacity
+    );
 
   /*
-    TRUE DOWNWARD-FACING SEMICIRCLE.
+    IMPORTANT:
 
-    The diameter is the horizontal line at centerY.
-    The arc travels from the left side downward and around
-    to the right side.
+    arc from PI → 0 gives the LOWER
+    half of the circle in canvas
+    coordinates.
+
+    Therefore the curved portion
+    points DOWN.
   */
   ctx.beginPath();
 
@@ -177,11 +274,6 @@ function drawDownwardSemicircle(progress, settings) {
     false
   );
 
-  ctx.lineTo(
-    centerX - radius,
-    centerY
-  );
-
   ctx.closePath();
 
   ctx.fill();
@@ -189,62 +281,34 @@ function drawDownwardSemicircle(progress, settings) {
   ctx.restore();
 }
 
+/* ---------------------------------------------------------
+   TEXT
+--------------------------------------------------------- */
 
-/*
-  Final reveal state.
-*/
-function drawFinalReveal(settings) {
-  if (settings.transparent) {
-    return;
-  }
-
-  const finalOpacity =
-    (1 - settings.photoVisibility) *
-    settings.revealOpacity;
-
-  if (finalOpacity <= 0) {
-    return;
-  }
-
-  ctx.save();
-
-  ctx.fillStyle = rgba(
-    settings.revealColor,
-    finalOpacity
-  );
-
-  ctx.fillRect(
-    0,
-    0,
-    W,
-    H
-  );
-
-  ctx.restore();
-}
-
-
-/*
-  Banner text.
-*/
 function drawText(progress, settings) {
-  const p = clamp(progress, 0, 1);
+  const p =
+    clamp(progress, 0, 1);
 
-  const titleY = 65;
-  const subY = 94;
-  const ctaY = 127;
+  /*
+    Text changes from white to dark
+    as the reveal progresses.
+  */
+  const whiteAlpha =
+    1 - p;
+
+  const darkAlpha =
+    p;
 
   ctx.save();
 
-  ctx.textBaseline = "middle";
+  ctx.textBaseline =
+    "middle";
 
   /*
-    Opening text.
+    WHITE TEXT
   */
-  ctx.fillStyle = rgba(
-    "#ffffff",
-    1 - p
-  );
+  ctx.fillStyle =
+    `rgba(255,255,255,${whiteAlpha})`;
 
   ctx.font =
     'bold 27px Georgia, "Times New Roman", serif';
@@ -252,7 +316,7 @@ function drawText(progress, settings) {
   ctx.fillText(
     settings.title,
     30,
-    titleY
+    65
   );
 
   if (settings.sub) {
@@ -262,7 +326,7 @@ function drawText(progress, settings) {
     ctx.fillText(
       settings.sub,
       31,
-      subY
+      94
     );
   }
 
@@ -273,17 +337,15 @@ function drawText(progress, settings) {
     ctx.fillText(
       settings.cta,
       31,
-      ctaY
+      127
     );
   }
 
   /*
-    Final text.
+    DARK TEXT
   */
-  ctx.fillStyle = rgba(
-    "#111111",
-    p
-  );
+  ctx.fillStyle =
+    `rgba(17,17,17,${darkAlpha})`;
 
   ctx.font =
     'bold 27px Georgia, "Times New Roman", serif';
@@ -291,7 +353,7 @@ function drawText(progress, settings) {
   ctx.fillText(
     settings.title,
     30,
-    titleY
+    65
   );
 
   if (settings.sub) {
@@ -301,7 +363,7 @@ function drawText(progress, settings) {
     ctx.fillText(
       settings.sub,
       31,
-      subY
+      94
     );
   }
 
@@ -312,19 +374,20 @@ function drawText(progress, settings) {
     ctx.fillText(
       settings.cta,
       31,
-      ctaY
+      127
     );
   }
 
   ctx.restore();
 }
 
+/* ---------------------------------------------------------
+   RENDER ONE FRAME
+--------------------------------------------------------- */
 
-/*
-  Render one animation frame.
-*/
 function renderFrame(progress) {
-  const settings = getSettings();
+  const settings =
+    getSettings();
 
   ctx.clearRect(
     0,
@@ -334,50 +397,26 @@ function renderFrame(progress) {
   );
 
   /*
-    Base photograph.
+    Photograph.
   */
-  drawCoverImage(
-    backgroundImage,
-    1
-  );
-
-  /*
-    Initial dark overlay.
-  */
-  const openingOpacity =
-    1 - settings.photoVisibility;
-
-  if (
-    progress < 1 &&
-    openingOpacity > 0
-  ) {
-    ctx.fillStyle = rgba(
-      settings.openingColor,
-      openingOpacity
-    );
-
-    ctx.fillRect(
-      0,
-      0,
-      W,
-      H
-    );
-  }
-
-  /*
-    SINGLE DOWNWARD SEMICIRCLE.
-  */
-  drawDownwardSemicircle(
-    progress,
+  drawBackground(
     settings
   );
 
   /*
-    Final state.
+    Opening dark overlay.
   */
-  if (progress >= 1) {
-    drawFinalReveal(settings);
-  }
+  drawOpeningOverlay(
+    settings
+  );
+
+  /*
+    Downward semicircle.
+  */
+  drawRevealSemicircle(
+    progress,
+    settings
+  );
 
   /*
     Text.
@@ -388,12 +427,15 @@ function renderFrame(progress) {
   );
 }
 
+/* ---------------------------------------------------------
+   ANIMATION TIMING
+--------------------------------------------------------- */
 
-/*
-  Animation timing.
-*/
-function animationProgress(timeMs, speed) {
-  const cycle =
+function getAnimationProgress(
+  elapsed,
+  speed
+) {
+  const duration =
     3600 /
     clamp(
       speed,
@@ -402,71 +444,79 @@ function animationProgress(timeMs, speed) {
     );
 
   const t =
-    (timeMs % cycle) /
-    cycle;
+    (elapsed % duration) /
+    duration;
 
   /*
-    30% opening hold
-    38% reveal
-    32% final state
+    30%:
+      opening
+
+    40%:
+      semicircle reveal
+
+    30%:
+      final state
   */
+
   if (t < 0.30) {
     return 0;
   }
 
-  if (t < 0.68) {
-    const q =
-      (t - 0.30) /
-      0.38;
+  if (t < 0.70) {
+    const reveal =
+      (t - 0.30) / 0.40;
 
     /*
-      Smooth ease-in/ease-out.
+      Smooth movement.
     */
     return (
-      q * q *
-      (3 - 2 * q)
+      reveal *
+      reveal *
+      (3 - 2 * reveal)
     );
   }
 
   return 1;
 }
 
+/* ---------------------------------------------------------
+   PREVIEW
+--------------------------------------------------------- */
 
-/*
-  Continuous preview.
-*/
-function animatePreview(now) {
-  const settings = getSettings();
+function animate(now) {
+  const settings =
+    getSettings();
+
+  const elapsed =
+    now - previewStart;
 
   const progress =
-    animationProgress(
-      now - previewStart,
+    getAnimationProgress(
+      elapsed,
       settings.speed
     );
 
-  renderFrame(progress);
+  renderFrame(
+    progress
+  );
 
   requestAnimationFrame(
-    animatePreview
+    animate
   );
 }
 
-
-/*
-  Restart animation.
-*/
 function restartPreview() {
   previewStart =
     performance.now();
 }
 
+/* ---------------------------------------------------------
+   IMAGE UPLOAD
+--------------------------------------------------------- */
 
-/*
-  Background image upload.
-*/
 imageInput.addEventListener(
   "change",
-  () => {
+  function () {
     const file =
       imageInput.files &&
       imageInput.files[0];
@@ -475,38 +525,48 @@ imageInput.addEventListener(
       return;
     }
 
-    const url =
-      URL.createObjectURL(file);
+    if (objectUrl) {
+      URL.revokeObjectURL(
+        objectUrl
+      );
+
+      objectUrl = null;
+    }
+
+    objectUrl =
+      URL.createObjectURL(
+        file
+      );
 
     const img =
       new Image();
 
-    img.onload = () => {
-      backgroundImage = img;
+    img.onload =
+      function () {
+        backgroundImage =
+          img;
 
-      URL.revokeObjectURL(url);
+        status.textContent =
+          "Background image loaded.";
 
-      status.textContent =
-        "Background image loaded.";
+        restartPreview();
+      };
 
-      restartPreview();
-    };
+    img.onerror =
+      function () {
+        status.textContent =
+          "Unable to load the selected image.";
+      };
 
-    img.onerror = () => {
-      URL.revokeObjectURL(url);
-
-      status.textContent =
-        "Could not load that image.";
-    };
-
-    img.src = url;
+    img.src =
+      objectUrl;
   }
 );
 
+/* ---------------------------------------------------------
+   CONTROLS
+--------------------------------------------------------- */
 
-/*
-  Controls.
-*/
 [
   titleInput,
   subInput,
@@ -519,66 +579,99 @@ imageInput.addEventListener(
   transparentInput,
   speedInput
 ].forEach(
-  (el) => {
+  function (element) {
+    if (!element) {
+      return;
+    }
 
-    el.addEventListener(
+    element.addEventListener(
       "input",
-      () => {
+      function () {
         updateOutputs();
         restartPreview();
       }
     );
 
-    el.addEventListener(
+    element.addEventListener(
       "change",
-      () => {
+      function () {
         updateOutputs();
         restartPreview();
       }
     );
-
   }
 );
 
+/* ---------------------------------------------------------
+   PNG DOWNLOAD
+--------------------------------------------------------- */
 
-/*
-  PNG export.
-*/
 pngBtn.addEventListener(
   "click",
-  () => {
-
+  function () {
     renderFrame(1);
 
-    const link =
-      document.createElement("a");
+    canvas.toBlob(
+      function (blob) {
+        if (!blob) {
+          status.textContent =
+            "PNG creation failed.";
 
-    link.download =
-      "of-ambition-and-grind-banner.png";
+          return;
+        }
 
-    link.href =
-      canvas.toDataURL(
-        "image/png"
-      );
+        const link =
+          document.createElement("a");
 
-    link.click();
+        const downloadUrl =
+          URL.createObjectURL(
+            blob
+          );
 
-    status.textContent =
-      "PNG created.";
+        link.href =
+          downloadUrl;
+
+        link.download =
+          "of-ambition-and-grind-banner.png";
+
+        document.body.appendChild(
+          link
+        );
+
+        link.click();
+
+        link.remove();
+
+        setTimeout(
+          function () {
+            URL.revokeObjectURL(
+              downloadUrl
+            );
+          },
+          1000
+        );
+
+        status.textContent =
+          "PNG created.";
+      },
+      "image/png"
+    );
   }
 );
 
+/* ---------------------------------------------------------
+   GIF DOWNLOAD
+--------------------------------------------------------- */
 
-/*
-  GIF export.
-*/
 gifBtn.addEventListener(
   "click",
-  async () => {
-
-    if (!window.GIF) {
+  function () {
+    if (
+      typeof window.GIF !==
+      "function"
+    ) {
       status.textContent =
-        "GIF library did not load. Check your internet connection.";
+        "GIF library has not loaded yet. Refresh the page and try again.";
 
       return;
     }
@@ -587,10 +680,16 @@ gifBtn.addEventListener(
     pngBtn.disabled = true;
 
     status.textContent =
-      "Generating GIF…";
+      "Preparing GIF…";
 
-    const frameCount = 54;
-    const delay = 55;
+    const settings =
+      getSettings();
+
+    const frameCount =
+      54;
+
+    const frameDelay =
+      60;
 
     const gif =
       new GIF({
@@ -599,94 +698,99 @@ gifBtn.addEventListener(
         width: W,
         height: H,
 
+        /*
+          gif.js worker loaded from CDN.
+        */
         workerScript:
           "https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js"
       });
 
+    /*
+      Generate every frame.
+    */
     for (
       let i = 0;
       i < frameCount;
       i++
     ) {
-
       const t =
         i /
         (frameCount - 1);
 
       let progress;
 
-      /*
-        GIF timing:
-        28% opening
-        44% reveal
-        28% final
-      */
-      if (t < 0.28) {
-
+      if (t < 0.30) {
         progress = 0;
-
-      } else if (t < 0.72) {
-
+      } else if (t < 0.70) {
         const q =
-          (t - 0.28) /
-          0.44;
+          (t - 0.30) /
+          0.40;
 
         progress =
-          q * q *
+          q *
+          q *
           (3 - 2 * q);
-
       } else {
-
         progress = 1;
-
       }
 
-      renderFrame(progress);
+      renderFrame(
+        progress
+      );
 
       gif.addFrame(
-        ctx,
+        canvas,
         {
           copy: true,
-          delay
+          delay: frameDelay
         }
       );
     }
 
     gif.on(
       "progress",
-      (p) => {
-
+      function (value) {
         status.textContent =
-          `Generating GIF… ${Math.round(p * 100)}%`;
+          `Generating GIF… ${Math.round(value * 100)}%`;
       }
     );
 
     gif.on(
       "finished",
-      (blob) => {
+      function (blob) {
+        const downloadUrl =
+          URL.createObjectURL(
+            blob
+          );
 
         const link =
           document.createElement("a");
 
+        link.href =
+          downloadUrl;
+
         link.download =
           "of-ambition-and-grind-banner.gif";
 
-        link.href =
-          URL.createObjectURL(blob);
+        document.body.appendChild(
+          link
+        );
 
         link.click();
 
+        link.remove();
+
         setTimeout(
-          () => {
+          function () {
             URL.revokeObjectURL(
-              link.href
+              downloadUrl
             );
           },
-          5000
+          10000
         );
 
         status.textContent =
-          "GIF created.";
+          "GIF created and downloaded.";
 
         gifBtn.disabled = false;
         pngBtn.disabled = false;
@@ -697,82 +801,75 @@ gifBtn.addEventListener(
 
     gif.on(
       "abort",
-      () => {
-
+      function () {
         status.textContent =
-          "GIF generation cancelled.";
+          "GIF generation was cancelled.";
 
         gifBtn.disabled = false;
         pngBtn.disabled = false;
-
-        restartPreview();
       }
     );
 
     try {
-
       gif.render();
-
     } catch (error) {
-
-      console.error(error);
+      console.error(
+        "GIF generation error:",
+        error
+      );
 
       status.textContent =
-        "GIF generation failed. Check the browser console for details.";
+        "GIF generation failed. Check the browser console.";
 
       gifBtn.disabled = false;
       pngBtn.disabled = false;
-
-      restartPreview();
     }
   }
 );
 
+/* ---------------------------------------------------------
+   LOAD DEFAULT BOOK IMAGE
+--------------------------------------------------------- */
 
-/*
-  Initialize controls.
-*/
-updateOutputs();
-
-
-/*
-  Load the ORIGINAL book image automatically.
-
-  The file must exist at:
-
-      assets/book-background.png
-*/
 const defaultImage =
   new Image();
 
-defaultImage.onload = () => {
+defaultImage.onload =
+  function () {
+    backgroundImage =
+      defaultImage;
 
-  backgroundImage =
-    defaultImage;
+    status.textContent =
+      "Ready — original book image loaded.";
 
-  status.textContent =
-    "Ready — original book image loaded.";
+    restartPreview();
+  };
 
-  restartPreview();
-};
+defaultImage.onerror =
+  function () {
+    backgroundImage = null;
 
-defaultImage.onerror = () => {
+    status.textContent =
+      "Ready — choose a background image.";
 
-  status.textContent =
-    "Ready — choose a background image.";
+    restartPreview();
+  };
 
-  restartPreview();
-};
-
+/*
+  IMPORTANT:
+  This path is relative to index.html.
+*/
 defaultImage.src =
   "./assets/book-background.png";
 
+/* ---------------------------------------------------------
+   INITIALIZE
+--------------------------------------------------------- */
 
-/*
-  Start preview.
-*/
+updateOutputs();
+
 restartPreview();
 
 requestAnimationFrame(
-  animatePreview
+  animate
 );
