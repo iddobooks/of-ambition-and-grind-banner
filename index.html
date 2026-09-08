@@ -2,69 +2,237 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Of Ambition and Grind — Banner Generator</title>
   <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
+
   <main class="app">
-    <header>
+
+    <header class="topbar">
+
       <div>
         <p class="eyebrow">EMAIL SIGNATURE BANNER</p>
+
         <h1>Of Ambition and Grind</h1>
-        <p class="muted">600 × 200 px • animated overlay • no author name</p>
+
+        <p class="muted">
+          600 × 200 px · animated light transition · no author name
+        </p>
       </div>
-      <div class="badge">GITHUB PAGES READY</div>
+
+      <div class="badge">
+        GITHUB PAGES READY
+      </div>
+
     </header>
 
-    <section class="grid">
+
+    <section class="workspace">
+
+      <!-- CONTROLS -->
+
       <aside class="panel">
-        <label>Background image
-          <input id="imageInput" type="file" accept="image/*">
-        </label>
 
-        <label>Book title
-          <input id="titleInput" value="OF AMBITION AND GRIND">
-        </label>
+        <div class="field">
 
-        <label>Supporting text
-          <input id="subInput" value="A NEW BOOK">
-        </label>
+          <label for="imageInput">
+            Background image
+          </label>
 
-        <label>Call to action
-          <input id="ctaInput" value="AVAILABLE NOW">
-        </label>
+          <input
+            id="imageInput"
+            type="file"
+            accept="image/*"
+          >
 
-        <label>Purchase URL
-          <input id="urlInput" placeholder="https://...">
-        </label>
+        </div>
+
+
+        <div class="field">
+
+          <label for="titleInput">
+            Book title
+          </label>
+
+          <input
+            id="titleInput"
+            type="text"
+            value="OF AMBITION AND GRIND"
+          >
+
+        </div>
+
+
+        <div class="field">
+
+          <label for="subInput">
+            Supporting text
+          </label>
+
+          <input
+            id="subInput"
+            type="text"
+            value="A NEW BOOK"
+          >
+
+        </div>
+
+
+        <div class="field">
+
+          <label for="ctaInput">
+            Call to action
+          </label>
+
+          <input
+            id="ctaInput"
+            type="text"
+            value="AVAILABLE NOW"
+          >
+
+        </div>
+
+
+        <div class="field">
+
+          <label for="urlInput">
+            Purchase URL
+          </label>
+
+          <input
+            id="urlInput"
+            type="url"
+            placeholder="https://..."
+          >
+
+        </div>
+
 
         <div class="controls">
-          <label>Overlay strength
-            <input id="overlayInput" type="range" min="20" max="90" value="72">
-          </label>
-          <label>Animation speed
-            <input id="speedInput" type="range" min="40" max="140" value="80">
-          </label>
+
+
+          <!-- OVERLAY TRANSPARENCY -->
+
+          <div class="range-field">
+
+            <div class="range-heading">
+
+              <label for="overlayInput">
+                Overlay transparency
+              </label>
+
+              <span id="overlayValue">
+                30%
+              </span>
+
+            </div>
+
+            <input
+              id="overlayInput"
+              type="range"
+              min="0"
+              max="70"
+              value="30"
+            >
+
+            <p class="hint">
+              Higher = more of the book image remains visible.
+            </p>
+
+          </div>
+
+
+          <!-- ANIMATION SPEED -->
+
+          <div class="range-field">
+
+            <div class="range-heading">
+
+              <label for="speedInput">
+                Animation speed
+              </label>
+
+              <span id="speedValue">
+                Normal
+              </span>
+
+            </div>
+
+            <input
+              id="speedInput"
+              type="range"
+              min="40"
+              max="140"
+              value="80"
+            >
+
+          </div>
+
+
         </div>
+
 
         <div class="buttons">
-          <button id="pngBtn">Download PNG</button>
-          <button id="gifBtn" class="primary">Generate GIF</button>
+
+          <button id="pngBtn">
+            Download PNG
+          </button>
+
+          <button
+            id="gifBtn"
+            class="primary"
+          >
+            Generate GIF
+          </button>
+
         </div>
-        <p id="status" class="status">Ready.</p>
+
+
+        <p
+          id="status"
+          class="status"
+        >
+          Ready.
+        </p>
+
       </aside>
 
+
+      <!-- PREVIEW -->
+
       <section class="preview-panel">
+
         <div class="preview-wrap">
-          <canvas id="canvas" width="600" height="200"></canvas>
+
+          <canvas
+            id="canvas"
+            width="600"
+            height="200"
+          ></canvas>
+
         </div>
-        <div class="size-note">Final email image: 600 × 200 px</div>
+
+        <div class="size-note">
+          Final email image: 600 × 200 px
+        </div>
+
       </section>
+
     </section>
+
   </main>
 
+
+  <!-- GIF.JS -->
+
   <script src="https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.js"></script>
+
+  <!-- APPLICATION -->
+
   <script src="app.js"></script>
+
 </body>
 </html>
