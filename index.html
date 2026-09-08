@@ -3,211 +3,112 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Of Ambition and Grind email banner generator">
   <title>Of Ambition and Grind — Banner Generator</title>
-
   <link rel="stylesheet" href="./style.css">
 </head>
-
 <body>
   <main class="app">
-
     <header class="topbar">
       <div>
         <p class="eyebrow">EMAIL SIGNATURE BANNER</p>
         <h1>Of Ambition and Grind</h1>
-        <p class="muted">600 × 200 px · animated promotional banner</p>
+        <p class="muted">600 × 200 px · downward semicircle reveal</p>
       </div>
-
       <div class="badge">GITHUB PAGES READY</div>
     </header>
 
     <section class="grid">
-
       <aside class="panel">
-
         <h2>Content</h2>
 
-        <label for="imageInput">
+        <label>
           Background image
-          <input
-            id="imageInput"
-            type="file"
-            accept="image/png,image/jpeg,image/webp,image/gif"
-          >
-          <span class="hint">
-            Choose another image from your computer. The default image is loaded from the assets folder.
-          </span>
+          <input id="imageInput" type="file" accept="image/*">
         </label>
 
-        <label for="titleInput">
+        <label>
           Book title
-          <input
-            id="titleInput"
-            type="text"
-            value="OF AMBITION AND GRIND"
-          >
+          <input id="titleInput" value="OF AMBITION AND GRIND">
         </label>
 
-        <label for="subInput">
+        <label>
           Supporting text
-          <input
-            id="subInput"
-            type="text"
-            value="A NEW BOOK"
-          >
+          <input id="subInput" value="A NEW BOOK">
         </label>
 
-        <label for="ctaInput">
+        <label>
           Call to action
-          <input
-            id="ctaInput"
-            type="text"
-            value="AVAILABLE NOW"
-          >
+          <input id="ctaInput" value="AVAILABLE NOW">
         </label>
 
-        <label for="urlInput">
+        <label>
           Purchase URL
-          <input
-            id="urlInput"
-            type="url"
-            placeholder="https://..."
-          >
+          <input id="urlInput" type="url" placeholder="https://...">
         </label>
 
         <h2 class="section-title">Appearance</h2>
 
         <div class="two-col">
-
-          <label for="openingColorInput">
+          <label>
             Opening colour
-            <input
-              id="openingColorInput"
-              type="color"
-              value="#000000"
-            >
+            <input id="openingColorInput" type="color" value="#000000">
           </label>
 
-          <label for="revealColorInput">
+          <label>
             Reveal colour
-            <input
-              id="revealColorInput"
-              type="color"
-              value="#ffffff"
-            >
+            <input id="revealColorInput" type="color" value="#ffffff">
           </label>
-
         </div>
 
-        <label for="photoInput">
+        <label>
           Photo visibility
-
           <div class="range-row">
-            <input
-              id="photoInput"
-              type="range"
-              min="0"
-              max="100"
-              value="24"
-            >
+            <input id="photoInput" type="range" min="0" max="100" value="24">
             <output id="photoValue">24%</output>
           </div>
-
-          <span class="hint">
-            Controls how strongly the photograph remains visible underneath the overlay.
-          </span>
+          <span class="hint">How much of the photograph remains visible.</span>
         </label>
 
-        <label for="sharpnessInput">
-          Reveal sharpness
-
+        <label>
+          Reveal opacity
           <div class="range-row">
-            <input
-              id="sharpnessInput"
-              type="range"
-              min="1"
-              max="100"
-              value="88"
-            >
-            <output id="sharpnessValue">88%</output>
+            <input id="revealOpacityInput" type="range" min="0" max="100" value="100">
+            <output id="revealOpacityValue">100%</output>
           </div>
+          <span class="hint">Controls the opacity of the semicircle overlay.</span>
         </label>
 
-        <label for="spreadInput">
-          Reveal spread
-
-          <div class="range-row">
-            <input
-              id="spreadInput"
-              type="range"
-              min="35"
-              max="100"
-              value="78"
-            >
-            <output id="spreadValue">78%</output>
-          </div>
+        <label class="check-row">
+          <input id="transparentInput" type="checkbox">
+          <span>Transparent reveal shape</span>
         </label>
 
-        <label for="speedInput">
+        <label>
           Animation speed
-
           <div class="range-row">
-            <input
-              id="speedInput"
-              type="range"
-              min="40"
-              max="140"
-              value="80"
-            >
+            <input id="speedInput" type="range" min="40" max="140" value="80">
             <output id="speedValue">80%</output>
           </div>
         </label>
 
         <div class="buttons">
-          <button id="pngBtn" type="button">
-            Download PNG
-          </button>
-
-          <button id="gifBtn" class="primary" type="button">
-            Generate GIF
-          </button>
+          <button id="pngBtn">Download PNG</button>
+          <button id="gifBtn" class="primary">Generate GIF</button>
         </div>
 
-        <p id="status" class="status" aria-live="polite">
-          Loading background image…
-        </p>
-
+        <p id="status" class="status">Ready.</p>
       </aside>
 
       <section class="preview-panel">
-
         <div class="preview-wrap">
-          <canvas
-            id="canvas"
-            width="600"
-            height="200"
-          ></canvas>
+          <canvas id="canvas" width="600" height="200"></canvas>
         </div>
-
-        <div class="size-note">
-          Final email image: 600 × 200 px
-        </div>
-
+        <div class="size-note">Final email image: 600 × 200 px</div>
       </section>
-
     </section>
-
   </main>
 
-  <!-- GIF library -->
-  <script
-    src="https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.js"
-    defer
-  ></script>
-
-  <!-- Application -->
-  <script src="./app.js" defer></script>
-
+  <script src="https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.js"></script>
+  <script src="./app.js"></script>
 </body>
 </html>
