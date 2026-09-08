@@ -28,17 +28,17 @@
 
         <label>
           Book title
-          <input id="titleInput" value="OF AMBITION AND GRIND">
+          <input id="titleInput" type="text" value="OF AMBITION AND GRIND">
         </label>
 
         <label>
           Supporting text
-          <input id="subInput" value="A NEW BOOK">
+          <input id="subInput" type="text" value="A NEW BOOK">
         </label>
 
         <label>
           Call to action
-          <input id="ctaInput" value="AVAILABLE NOW">
+          <input id="ctaInput" type="text" value="AVAILABLE NOW">
         </label>
 
         <label>
@@ -92,11 +92,11 @@
         </label>
 
         <div class="buttons">
-          <button id="pngBtn">Download PNG</button>
-          <button id="gifBtn" class="primary">Generate GIF</button>
+          <button id="pngBtn" type="button">Download PNG</button>
+          <button id="gifBtn" class="primary" type="button">Generate GIF</button>
         </div>
 
-        <p id="status" class="status">Ready.</p>
+        <p id="status" class="status">Loading background image…</p>
       </aside>
 
       <section class="preview-panel">
@@ -109,6 +109,6 @@
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.js"></script>
-  <script src="./app.js"></script>
+  <script src="./app.js" defer></script>
 </body>
 </html>
