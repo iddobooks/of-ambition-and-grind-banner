@@ -14,11 +14,14 @@
         <h1>Of Ambition and Grind</h1>
         <p class="muted">600 × 200 px · downward semicircle reveal</p>
       </div>
+
       <div class="badge">GITHUB PAGES READY</div>
     </header>
 
     <section class="grid">
+
       <aside class="panel">
+
         <h2>Content</h2>
 
         <label>
@@ -28,83 +31,175 @@
 
         <label>
           Book title
-          <input id="titleInput" type="text" value="OF AMBITION AND GRIND">
+          <input
+            id="titleInput"
+            type="text"
+            value="OF AMBITION AND GRIND"
+          >
         </label>
 
         <label>
           Supporting text
-          <input id="subInput" type="text" value="A NEW BOOK">
+          <input
+            id="subInput"
+            type="text"
+            value="A NEW BOOK"
+          >
         </label>
 
         <label>
           Call to action
-          <input id="ctaInput" type="text" value="AVAILABLE NOW">
+          <input
+            id="ctaInput"
+            type="text"
+            value="AVAILABLE NOW"
+          >
         </label>
 
         <label>
           Purchase URL
-          <input id="urlInput" type="url" placeholder="https://...">
+          <input
+            id="urlInput"
+            type="url"
+            placeholder="https://..."
+          >
         </label>
 
         <h2 class="section-title">Appearance</h2>
 
         <div class="two-col">
+
           <label>
             Opening colour
-            <input id="openingColorInput" type="color" value="#000000">
+            <input
+              id="openingColorInput"
+              type="color"
+              value="#000000"
+            >
           </label>
 
           <label>
-            Reveal colour
-            <input id="revealColorInput" type="color" value="#ffffff">
+            Photo visibility
+            <div class="range-row">
+              <input
+                id="photoInput"
+                type="range"
+                min="0"
+                max="100"
+                value="24"
+              >
+              <output id="photoValue">24%</output>
+            </div>
           </label>
+
         </div>
 
         <label>
-          Photo visibility
+          Gradient start colour
+          <input
+            id="gradientStartInput"
+            type="color"
+            value="#000000"
+          >
+        </label>
+
+        <label>
+          Gradient end colour
+          <input
+            id="gradientEndInput"
+            type="color"
+            value="#ffffff"
+          >
+        </label>
+
+        <label>
+          Gradient angle
           <div class="range-row">
-            <input id="photoInput" type="range" min="0" max="100" value="24">
-            <output id="photoValue">24%</output>
+            <input
+              id="gradientAngleInput"
+              type="range"
+              min="0"
+              max="360"
+              value="90"
+            >
+            <output id="gradientAngleValue">90°</output>
           </div>
-          <span class="hint">How much of the photograph remains visible.</span>
+          <span class="hint">
+            Changes the direction of the overlay gradient.
+          </span>
         </label>
 
         <label>
           Reveal opacity
           <div class="range-row">
-            <input id="revealOpacityInput" type="range" min="0" max="100" value="100">
+            <input
+              id="revealOpacityInput"
+              type="range"
+              min="0"
+              max="100"
+              value="100"
+            >
             <output id="revealOpacityValue">100%</output>
           </div>
-          <span class="hint">Controls the opacity of the semicircle overlay.</span>
+          <span class="hint">
+            Controls the transparency of the semicircle overlay.
+          </span>
         </label>
 
         <label class="check-row">
-          <input id="transparentInput" type="checkbox">
+          <input
+            id="transparentInput"
+            type="checkbox"
+          >
           <span>Transparent reveal shape</span>
         </label>
 
         <label>
           Animation speed
           <div class="range-row">
-            <input id="speedInput" type="range" min="40" max="140" value="80">
+            <input
+              id="speedInput"
+              type="range"
+              min="40"
+              max="140"
+              value="80"
+            >
             <output id="speedValue">80%</output>
           </div>
         </label>
 
         <div class="buttons">
-          <button id="pngBtn" type="button">Download PNG</button>
-          <button id="gifBtn" class="primary" type="button">Generate GIF</button>
+          <button id="pngBtn" type="button">
+            Download PNG
+          </button>
+
+          <button id="gifBtn" class="primary" type="button">
+            Generate GIF
+          </button>
         </div>
 
-        <p id="status" class="status">Loading background image…</p>
+        <p id="status" class="status">
+          Loading background image…
+        </p>
+
       </aside>
 
       <section class="preview-panel">
+
         <div class="preview-wrap">
-          <canvas id="canvas" width="600" height="200"></canvas>
+          <canvas
+            id="canvas"
+            width="600"
+            height="200"
+          ></canvas>
         </div>
-        <div class="size-note">Final email image: 600 × 200 px</div>
+
+        <div class="size-note">
+          Final email image: 600 × 200 px
+        </div>
+
       </section>
+
     </section>
   </main>
 
