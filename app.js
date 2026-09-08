@@ -1,5 +1,16 @@
-const canvas = document.getElementById("previewCanvas");
-const ctx = canvas.getContext("2d");
+"use strict";
+
+
+/* =========================================================
+   CANVAS
+========================================================= */
+
+const canvas =
+  document.getElementById("previewCanvas");
+
+const ctx =
+  canvas.getContext("2d");
+
 
 const W = 600;
 const H = 200;
@@ -7,134 +18,335 @@ const H = 200;
 canvas.width = W;
 canvas.height = H;
 
-const bgImage = new Image();
-bgImage.src = "assets/book-background.png";
 
-const settings = {
-  title: "OF AMBITION AND GRIND",
-  supporting: "A practical guide to turning ambition into action.",
-  cta: "READ THE BOOK",
-  url: "",
-  openingColor: "#000000",
-  revealColor: "#ffffff",
-  photoVisibility: 28,
-  revealSoftness: 42,
-  revealWidth: 82,
-  speed: 80
-};
+/* =========================================================
+   BACKGROUND IMAGE
+========================================================= */
+
+const bgImage =
+  new Image();
+
+bgImage.decoding =
+  "async";
+
+bgImage.src =
+  "assets/book-background.png";
+
+
+const imageError =
+  document.getElementById(
+    "imageError"
+  );
+
 
 let imageReady = false;
-let animationStart = performance.now();
 
-bgImage.onload = () => {
-  imageReady = true;
-  renderPreview(0);
+
+/* =========================================================
+   SETTINGS
+========================================================= */
+
+const settings = {
+
+  title:
+    "OF AMBITION AND GRIND",
+
+  supporting:
+    "A practical guide to turning ambition into action.",
+
+  cta:
+    "READ THE BOOK",
+
+  url:
+    "",
+
+  openingColor:
+    "#000000",
+
+  revealColor:
+    "#ffffff",
+
+  photoVisibility:
+    28,
+
+  revealSoftness:
+    42,
+
+  revealWidth:
+    82,
+
+  speed:
+    80
+
 };
 
-bgImage.onerror = () => {
-  console.error(
-    "Could not load assets/book-background.png"
-  );
-};
+
+/* =========================================================
+   IMAGE LOADING
+========================================================= */
+
+bgImage.onload =
+  function () {
+
+    imageReady = true;
+
+    if (imageError) {
+      imageError.hidden = true;
+    }
+
+    restartAnimation();
+
+  };
 
 
-/* =====================================================
+bgImage.onerror =
+  function () {
+
+    imageReady = false;
+
+    if (imageError) {
+      imageError.hidden = false;
+    }
+
+    /*
+     * Still draw the animation background
+     * so the canvas itself remains alive.
+     */
+    restartAnimation();
+
+  };
+
+
+/* =========================================================
    HELPERS
-===================================================== */
+========================================================= */
 
-function clamp(value, min, max) {
-  return Math.max(min, Math.min(max, value));
-}
+function clamp(
+  value,
+  min,
+  max
+) {
 
-function easeInOut(t) {
-  return t < 0.5
-    ? 4 * t * t * t
-    : 1 - Math.pow(-2 * t + 2, 3) / 2;
-}
-
-function hexToRgba(hex, alpha) {
-  const clean = hex.replace("#", "");
-
-  let r;
-  let g;
-  let b;
-
-  if (clean.length === 3) {
-    r = parseInt(clean[0] + clean[0], 16);
-    g = parseInt(clean[1] + clean[1], 16);
-    b = parseInt(clean[2] + clean[2], 16);
-  } else {
-    r = parseInt(clean.substring(0, 2), 16);
-    g = parseInt(clean.substring(2, 4), 16);
-    b = parseInt(clean.substring(4, 6), 16);
-  }
-
-  return `rgba(${r},${g},${b},${alpha})`;
-}
-
-
-/* =====================================================
-   BACKGROUND
-===================================================== */
-
-function drawCoverImage() {
-  if (!imageReady) return;
-
-  const imageRatio =
-    bgImage.width / bgImage.height;
-
-  const canvasRatio =
-    W / H;
-
-  let sx = 0;
-  let sy = 0;
-  let sw = bgImage.width;
-  let sh = bgImage.height;
-
-  if (imageRatio > canvasRatio) {
-    sw =
-      bgImage.height * canvasRatio;
-
-    sx =
-      (bgImage.width - sw) / 2;
-  } else {
-    sh =
-      bgImage.width / canvasRatio;
-
-    sy =
-      (bgImage.height - sh) / 2;
-  }
-
-  ctx.drawImage(
-    bgImage,
-    sx,
-    sy,
-    sw,
-    sh,
-    0,
-    0,
-    W,
-    H
+  return Math.max(
+    min,
+    Math.min(max, value)
   );
+
 }
 
 
-/* =====================================================
-   OPENING OVERLAY
-===================================================== */
+function easeInOut(
+  t
+) {
+
+  t = clamp(
+    t,
+    0,
+    1
+  );
+
+  if (t < 0.5) {
+
+    return (
+      4 *
+      t *
+      t *
+      t
+    );
+
+  }
+
+  return (
+    1 -
+    Math.pow(
+      -2 * t + 2,
+      3
+    ) /
+    2
+  );
+
+}
+
+
+function hexToRgba(
+  hex,
+  alpha
+) {
+
+  let value =
+    String(hex)
+      .replace("#", "");
+
+  if (value.length === 3) {
+
+    value =
+      value
+        .split("")
+        .map(
+          character =>
+            character +
+            character
+        )
+        .join("");
+
+  }
+
+  const r =
+    parseInt(
+      value.substring(0, 2),
+      16
+    );
+
+  const g =
+    parseInt(
+      value.substring(2, 4),
+      16
+    );
+
+  const b =
+    parseInt(
+      value.substring(4, 6),
+      16
+    );
+
+  return (
+    `rgba(${r},${g},${b},${alpha})`
+  );
+
+}
+
+
+/* =========================================================
+   BACKGROUND
+========================================================= */
+
+function drawBackground() {
+
+  /*
+   * If the image has loaded,
+   * draw the actual book photograph.
+   */
+
+  if (
+    imageReady &&
+    bgImage.naturalWidth > 0
+  ) {
+
+    const imageRatio =
+      bgImage.naturalWidth /
+      bgImage.naturalHeight;
+
+    const canvasRatio =
+      W / H;
+
+    let sx = 0;
+    let sy = 0;
+    let sw =
+      bgImage.naturalWidth;
+    let sh =
+      bgImage.naturalHeight;
+
+
+    /*
+     * Cover the entire banner.
+     */
+
+    if (
+      imageRatio >
+      canvasRatio
+    ) {
+
+      sw =
+        bgImage.naturalHeight *
+        canvasRatio;
+
+      sx =
+        (
+          bgImage.naturalWidth -
+          sw
+        ) /
+        2;
+
+    } else {
+
+      sh =
+        bgImage.naturalWidth /
+        canvasRatio;
+
+      sy =
+        (
+          bgImage.naturalHeight -
+          sh
+        ) /
+        2;
+
+    }
+
+
+    ctx.drawImage(
+      bgImage,
+      sx,
+      sy,
+      sw,
+      sh,
+      0,
+      0,
+      W,
+      H
+    );
+
+  } else {
+
+    /*
+     * Temporary fallback while image loads.
+     */
+    ctx.fillStyle =
+      "#111111";
+
+    ctx.fillRect(
+      0,
+      0,
+      W,
+      H
+    );
+
+  }
+
+}
+
+
+/* =========================================================
+   OPENING DARK OVERLAY
+========================================================= */
 
 function drawOpeningOverlay() {
+
+  const visibility =
+    settings.photoVisibility /
+    100;
+
+
+  /*
+   * Higher photo visibility =
+   * lower black opacity.
+   */
+
+  const opacity =
+    0.82 -
+    visibility * 0.55;
+
+
   ctx.save();
+
+  ctx.globalAlpha =
+    clamp(
+      opacity,
+      0.15,
+      0.82
+    );
 
   ctx.fillStyle =
     settings.openingColor;
-
-  const alpha =
-    0.72 -
-    (settings.photoVisibility / 100) * 0.52;
-
-  ctx.globalAlpha =
-    clamp(alpha, 0.15, 0.80);
 
   ctx.fillRect(
     0,
@@ -144,234 +356,292 @@ function drawOpeningOverlay() {
   );
 
   ctx.restore();
+
 }
 
 
-/* =====================================================
-   REVEAL SHAPE
-=====================================================
+/* =========================================================
+   THE OVERLAY SHAPE
+=========================================================
 
-   IMPORTANT:
+   THIS is the only part being vertically flipped.
 
-   The animation direction remains unchanged.
+   The animation direction remains the same.
 
-   We are NOT flipping the canvas.
+   We construct the shape normally, then mirror its
+   geometry around its own horizontal centre.
 
-   We are NOT moving the animation from bottom to top.
+   We DO NOT flip the canvas.
 
-   We are flipping ONLY the geometry of the shape
-   vertically inside its own bounding box.
+========================================================= */
 
-===================================================== */
-
-function drawReveal(progress) {
+function drawRevealShape(
+  progress
+) {
 
   const p =
-    clamp(progress, 0, 1);
+    clamp(
+      progress,
+      0,
+      1
+    );
 
-  const revealColor =
-    settings.revealColor;
 
-  const spread =
-    0.35 +
-    (settings.revealWidth / 100) * 0.9;
+  if (p <= 0) {
+    return;
+  }
 
-  const softness =
-    settings.revealSoftness / 100;
 
   /*
-   * Original animation position.
+   * Animation geometry.
+   *
+   * This remains anchored at the bottom,
+   * exactly as the animation was designed.
    */
-  const originX =
+
+  const centerX =
     W * 0.5;
 
-  const originY =
-    H + 18;
+  const bottom =
+    H + 12;
 
-  const maxWidth =
-    W * spread;
 
-  const maxHeight =
-    H + 80;
+  const width =
+    W *
+    (
+      0.42 +
+      (
+        settings.revealWidth /
+        100
+      ) *
+      1.05
+    );
+
+
+  const height =
+    (
+      H + 80
+    ) *
+    Math.pow(
+      p,
+      0.72
+    );
+
 
   /*
-   * Animation growth remains exactly the same.
+   * Shape bounding box.
    */
-  const currentWidth =
-    maxWidth *
-    Math.pow(p, 0.72);
-
-  const currentHeight =
-    maxHeight *
-    Math.pow(p, 0.70);
 
   const left =
-    originX -
-    currentWidth / 2;
+    centerX -
+    width / 2;
 
   const right =
-    originX +
-    currentWidth / 2;
+    centerX +
+    width / 2;
 
   const top =
-    originY -
-    currentHeight;
+    bottom -
+    height;
 
 
   /*
-   * -------------------------------------------------
-   * VERTICAL FLIP OF THE SHAPE ONLY
-   * -------------------------------------------------
+   * The ORIGINAL shape is defined in normalized
+   * coordinates from 0 to 1.
    *
-   * Every Y coordinate is mirrored around the
-   * horizontal centre of the shape's own bounding box.
-   *
-   * This is:
-   *
-   *     flippedY = top + originY - originalY
-   *
-   * NOT:
-   *
-   *     flippedY = H - originalY
-   *
-   * because the latter flips against the entire canvas
-   * and pushes the shape out of view.
+   * We then vertically mirror those coordinates.
    */
 
-  function flipY(y) {
+  function Y(
+    normalized
+  ) {
+
+    /*
+     * THIS IS THE VERTICAL FLIP.
+     *
+     * 0 becomes 1
+     * 1 becomes 0
+     */
+
+    const flipped =
+      1 -
+      normalized;
+
+
     return (
       top +
-      originY -
-      y
+      flipped *
+      height
     );
+
+  }
+
+
+  function X(
+    normalized
+  ) {
+
+    return (
+      left +
+      normalized *
+      width
+    );
+
   }
 
 
   ctx.save();
 
+
   ctx.beginPath();
 
 
   /*
-   * ORIGINAL LOWER CENTRE
-   * becomes the vertically flipped upper centre.
+   * TOP / CENTRE OF THE SHAPE
+   *
+   * Because Y() is vertically flipped,
+   * this point is now in the opposite orientation.
    */
+
   ctx.moveTo(
-    originX,
-    flipY(originY)
+    X(0.50),
+    Y(0.00)
   );
 
 
   /*
-   * LEFT LOWER CURVE
+   * LEFT SIDE OF THE CURVED SHAPE
    */
+
   ctx.bezierCurveTo(
 
-    originX -
-      currentWidth * 0.10,
+    X(0.39),
+    Y(0.015),
 
-    flipY(
-      originY -
-      currentHeight * 0.10
-    ),
+    X(0.24),
+    Y(0.08),
 
-    left +
-      currentWidth * 0.02,
+    X(0.14),
+    Y(0.20)
 
-    flipY(
-      originY -
-      currentHeight * 0.34
-    ),
+  );
 
-    left +
-      currentWidth * 0.16,
 
-    flipY(
-      originY -
-      currentHeight * 0.56
-    )
+  ctx.bezierCurveTo(
+
+    X(0.055),
+    Y(0.32),
+
+    X(0.025),
+    Y(0.47),
+
+    X(0.00),
+    Y(0.63)
+
   );
 
 
   /*
-   * BROAD CURVED SECTION
+   * LOWER LEFT CURVE
    */
+
   ctx.bezierCurveTo(
 
-    left +
-      currentWidth * 0.30,
+    X(0.07),
+    Y(0.79),
 
-    flipY(
-      originY -
-      currentHeight * 0.78
-    ),
+    X(0.22),
+    Y(0.91),
 
-    left +
-      currentWidth * 0.50,
+    X(0.39),
+    Y(0.97)
 
-    flipY(
-      top +
-      currentHeight * 0.04
-    ),
+  );
 
-    originX,
 
-    flipY(top)
+  /*
+   * NARROW LOWER CENTRE
+   */
+
+  ctx.bezierCurveTo(
+
+    X(0.45),
+    Y(0.99),
+
+    X(0.48),
+    Y(1.00),
+
+    X(0.50),
+    Y(1.00)
+
+  );
+
+
+  /*
+   * NARROW LOWER CENTRE → RIGHT
+   */
+
+  ctx.bezierCurveTo(
+
+    X(0.52),
+    Y(1.00),
+
+    X(0.55),
+    Y(0.99),
+
+    X(0.61),
+    Y(0.97)
+
+  );
+
+
+  /*
+   * LOWER RIGHT CURVE
+   */
+
+  ctx.bezierCurveTo(
+
+    X(0.78),
+    Y(0.91),
+
+    X(0.93),
+    Y(0.79),
+
+    X(1.00),
+    Y(0.63)
+
   );
 
 
   /*
    * RIGHT SIDE
    */
+
   ctx.bezierCurveTo(
 
-    right -
-      currentWidth * 0.50,
+    X(0.975),
+    Y(0.47),
 
-    flipY(
-      top +
-      currentHeight * 0.04
-    ),
+    X(0.945),
+    Y(0.32),
 
-    right -
-      currentWidth * 0.30,
+    X(0.86),
+    Y(0.20)
 
-    flipY(
-      originY -
-      currentHeight * 0.78
-    ),
-
-    right -
-      currentWidth * 0.16,
-
-    flipY(
-      originY -
-      currentHeight * 0.56
-    )
   );
 
 
   ctx.bezierCurveTo(
 
-    right -
-      currentWidth * 0.02,
+    X(0.76),
+    Y(0.08),
 
-    flipY(
-      originY -
-      currentHeight * 0.34
-    ),
+    X(0.61),
+    Y(0.015),
 
-    originX +
-      currentWidth * 0.10,
+    X(0.50),
+    Y(0.00)
 
-    flipY(
-      originY -
-      currentHeight * 0.10
-    ),
-
-    originX,
-
-    flipY(originY)
   );
 
 
@@ -379,46 +649,53 @@ function drawReveal(progress) {
 
 
   /*
-   * Softness
+   * Soft edge.
    */
+
+  const softness =
+    settings.revealSoftness /
+    100;
+
+
   if (softness > 0) {
 
     ctx.shadowColor =
       hexToRgba(
-        revealColor,
-        0.20
+        settings.revealColor,
+        0.22
       );
 
     ctx.shadowBlur =
-      8 +
-      softness * 18;
+      5 +
+      softness * 20;
 
-    ctx.shadowOffsetX = 0;
-    ctx.shadowOffsetY = 0;
   }
 
 
   ctx.fillStyle =
-    revealColor;
+    settings.revealColor;
 
   ctx.fill();
 
+
   ctx.restore();
+
 }
 
 
-/* =====================================================
+/* =========================================================
    FINAL WHITE STATE
-===================================================== */
+========================================================= */
 
-function drawFinalOverlay() {
+function drawFinalState() {
 
   ctx.save();
 
   ctx.fillStyle =
     settings.revealColor;
 
-  ctx.globalAlpha = 0.96;
+  ctx.globalAlpha =
+    0.96;
 
   ctx.fillRect(
     0,
@@ -428,74 +705,101 @@ function drawFinalOverlay() {
   );
 
   ctx.restore();
+
 }
 
 
-/* =====================================================
+/* =========================================================
    TEXT
-===================================================== */
+========================================================= */
 
-function drawText(progress) {
+function drawText(
+  revealProgress
+) {
 
   const p =
-    clamp(progress, 0, 1);
-
-  const textTransition =
     clamp(
-      (p - 0.40) / 0.35,
+      revealProgress,
       0,
       1
     );
 
+
+  /*
+   * Text changes from white to black
+   * during the reveal.
+   */
+
+  const transition =
+    clamp(
+      (
+        p - 0.35
+      ) /
+      0.65,
+      0,
+      1
+    );
+
+
   const whiteAlpha =
-    1 - textTransition;
+    1 -
+    transition;
 
   const blackAlpha =
-    textTransition;
+    transition;
 
 
   ctx.save();
 
-  ctx.textBaseline =
-    "middle";
 
   ctx.textAlign =
     "left";
+
+  ctx.textBaseline =
+    "middle";
 
 
   /*
    * TITLE
    */
+
   ctx.font =
     "700 27px Arial, Helvetica, sans-serif";
+
 
   ctx.fillStyle =
     `rgba(255,255,255,${whiteAlpha})`;
 
+
   ctx.fillText(
     settings.title,
     30,
-    63
+    62
   );
+
 
   ctx.fillStyle =
     `rgba(0,0,0,${blackAlpha})`;
 
+
   ctx.fillText(
     settings.title,
     30,
-    63
+    62
   );
 
 
   /*
    * SUPPORTING TEXT
    */
+
   ctx.font =
     "400 13px Arial, Helvetica, sans-serif";
 
+
   ctx.fillStyle =
     `rgba(255,255,255,${whiteAlpha})`;
+
 
   ctx.fillText(
     settings.supporting,
@@ -503,8 +807,10 @@ function drawText(progress) {
     88
   );
 
+
   ctx.fillStyle =
     `rgba(0,0,0,${blackAlpha})`;
+
 
   ctx.fillText(
     settings.supporting,
@@ -516,39 +822,49 @@ function drawText(progress) {
   /*
    * CTA
    */
+
   ctx.font =
     "700 12px Arial, Helvetica, sans-serif";
+
 
   ctx.fillStyle =
     `rgba(255,255,255,${whiteAlpha})`;
 
+
   ctx.fillText(
     settings.cta,
     30,
-    125
+    122
   );
+
 
   ctx.fillStyle =
     `rgba(0,0,0,${blackAlpha})`;
 
+
   ctx.fillText(
     settings.cta,
     30,
-    125
+    122
   );
 
 
   ctx.restore();
+
 }
 
 
-/* =====================================================
-   PREVIEW TIMELINE
-===================================================== */
+/* =========================================================
+   COMPLETE FRAME
+========================================================= */
 
-function renderPreview(progress) {
+function render(
+  timeline
+) {
 
-  if (!imageReady) return;
+  /*
+   * ALWAYS clear the canvas first.
+   */
 
   ctx.clearRect(
     0,
@@ -557,105 +873,157 @@ function renderPreview(progress) {
     H
   );
 
+
   /*
-   * Background is never flipped.
+   * 1. PHOTO
    */
-  drawCoverImage();
+
+  drawBackground();
 
 
   /*
-   * DARK OPENING
+   * 2. OPENING
    */
-  if (progress < 0.30) {
+
+  if (
+    timeline <
+    0.30
+  ) {
 
     drawOpeningOverlay();
 
-    const openingProgress =
-      progress / 0.30;
+    drawText(0);
 
-    drawText(
-      openingProgress * 0.15
-    );
+    return;
 
   }
 
 
   /*
-   * REVEAL
+   * 3. REVEAL
    */
-  else if (progress < 0.70) {
+
+  if (
+    timeline <
+    0.70
+  ) {
 
     drawOpeningOverlay();
 
-    const revealProgress =
-      (progress - 0.30) / 0.40;
 
-    drawReveal(
+    const revealProgress =
+      (
+        timeline -
+        0.30
+      ) /
+      0.40;
+
+
+    const eased =
       easeInOut(
         revealProgress
-      )
+      );
+
+
+    drawRevealShape(
+      eased
     );
+
 
     drawText(
       revealProgress
     );
 
+
+    return;
+
   }
 
 
   /*
-   * FINAL WHITE STATE
+   * 4. FINAL
    */
-  else {
 
-    drawFinalOverlay();
+  drawFinalState();
 
-    drawText(1);
+  drawText(1);
 
-  }
 }
 
 
-/* =====================================================
-   ANIMATION LOOP
-===================================================== */
+/* =========================================================
+   ANIMATION
+========================================================= */
 
-function previewLoop(now) {
+let animationStart =
+  performance.now();
+
+
+function restartAnimation() {
+
+  animationStart =
+    performance.now();
+
+}
+
+
+function animationLoop(
+  now
+) {
 
   const elapsed =
     now -
     animationStart;
 
+
+  /*
+   * 4200 ms at 80%.
+   */
+
   const speedFactor =
-    settings.speed / 80;
+    settings.speed /
+    80;
+
 
   const duration =
     4200 /
     speedFactor;
 
-  const progress =
-    (elapsed % duration) /
+
+  const timeline =
+    (
+      elapsed %
+      duration
+    ) /
     duration;
 
-  renderPreview(
-    progress
+
+  render(
+    timeline
   );
+
 
   requestAnimationFrame(
-    previewLoop
+    animationLoop
   );
+
 }
 
+
+/*
+ * Start the animation immediately.
+ */
+
 requestAnimationFrame(
-  previewLoop
+  animationLoop
 );
 
 
-/* =====================================================
-   CONTROLS
-===================================================== */
+/* =========================================================
+   INPUT BINDINGS
+========================================================= */
 
-function bindInput(
+function bindText(
   id,
   property
 ) {
@@ -663,21 +1031,26 @@ function bindInput(
   const element =
     document.getElementById(id);
 
-  if (!element) return;
+
+  if (!element) {
+    return;
+  }
+
 
   element.addEventListener(
     "input",
-    () => {
+    function () {
 
       settings[property] =
         element.value;
 
     }
   );
+
 }
 
 
-function bindValue(
+function bindSlider(
   id,
   property
 ) {
@@ -685,19 +1058,27 @@ function bindValue(
   const element =
     document.getElementById(id);
 
-  if (!element) return;
+
+  if (!element) {
+    return;
+  }
+
+
+  const output =
+    document.getElementById(
+      id + "Value"
+    );
+
 
   element.addEventListener(
     "input",
-    () => {
+    function () {
 
       settings[property] =
-        Number(element.value);
-
-      const output =
-        document.getElementById(
-          `${id}Value`
+        Number(
+          element.value
         );
+
 
       if (output) {
 
@@ -708,219 +1089,64 @@ function bindValue(
 
     }
   );
+
 }
 
 
-bindInput(
+bindText(
   "bookTitle",
   "title"
 );
 
-bindInput(
+bindText(
   "supportingText",
   "supporting"
 );
 
-bindInput(
+bindText(
   "ctaText",
   "cta"
 );
 
-bindInput(
+bindText(
   "purchaseUrl",
   "url"
 );
 
-bindInput(
+bindText(
   "openingColor",
   "openingColor"
 );
 
-bindInput(
+bindText(
   "revealColor",
   "revealColor"
 );
 
-
-bindValue(
+bindSlider(
   "photoVisibility",
   "photoVisibility"
 );
 
-bindValue(
+bindSlider(
   "revealSoftness",
   "revealSoftness"
 );
 
-bindValue(
+bindSlider(
   "revealWidth",
   "revealWidth"
 );
 
-bindValue(
+bindSlider(
   "animationSpeed",
   "speed"
 );
 
 
-/* =====================================================
-   GIF GENERATION
-===================================================== */
-
-async function generateGif() {
-
-  if (
-    typeof GIF ===
-    "undefined"
-  ) {
-
-    alert(
-      "GIF library has not loaded yet."
-    );
-
-    return;
-  }
-
-
-  const button =
-    document.getElementById(
-      "generateGif"
-    );
-
-
-  if (button) {
-
-    button.disabled =
-      true;
-
-    button.textContent =
-      "Generating...";
-
-  }
-
-
-  const gif =
-    new GIF({
-
-      workers: 2,
-
-      quality: 10,
-
-      width: W,
-
-      height: H,
-
-      workerScript:
-        "https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js"
-
-    });
-
-
-  const frameCount = 60;
-  const frameDelay = 55;
-
-
-  for (
-    let i = 0;
-    i < frameCount;
-    i++
-  ) {
-
-    const progress =
-      i /
-      (frameCount - 1);
-
-    renderPreview(
-      progress
-    );
-
-    gif.addFrame(
-      ctx,
-      {
-        copy: true,
-        delay: frameDelay
-      }
-    );
-  }
-
-
-  gif.on(
-    "finished",
-    blob => {
-
-      const url =
-        URL.createObjectURL(
-          blob
-        );
-
-      const link =
-        document.createElement(
-          "a"
-        );
-
-      link.href = url;
-
-      link.download =
-        "of-ambition-and-grind-banner.gif";
-
-      document.body.appendChild(
-        link
-      );
-
-      link.click();
-
-      link.remove();
-
-
-      setTimeout(
-        () => {
-
-          URL.revokeObjectURL(
-            url
-          );
-
-        },
-        1000
-      );
-
-
-      if (button) {
-
-        button.disabled =
-          false;
-
-        button.textContent =
-          "Generate GIF";
-
-      }
-
-    }
-  );
-
-
-  gif.render();
-}
-
-
-const gifButton =
-  document.getElementById(
-    "generateGif"
-  );
-
-
-if (gifButton) {
-
-  gifButton.addEventListener(
-    "click",
-    generateGif
-  );
-
-}
-
-
-/* =====================================================
-   RESET
-===================================================== */
+/* =========================================================
+   RESTART BUTTON
+========================================================= */
 
 const resetButton =
   document.getElementById(
@@ -932,12 +1158,238 @@ if (resetButton) {
 
   resetButton.addEventListener(
     "click",
-    () => {
+    function () {
 
-      animationStart =
-        performance.now();
+      restartAnimation();
 
     }
   );
 
 }
+
+
+/* =========================================================
+   GIF EXPORT
+========================================================= */
+
+const generateButton =
+  document.getElementById(
+    "generateGif"
+  );
+
+
+async function generateGif() {
+
+  if (
+    typeof GIF ===
+    "undefined"
+  ) {
+
+    alert(
+      "The GIF generator could not be loaded. The preview itself should still work."
+    );
+
+    return;
+
+  }
+
+
+  if (!imageReady) {
+
+    alert(
+      "The banner image has not loaded yet. Check assets/book-background.png."
+    );
+
+    return;
+
+  }
+
+
+  generateButton.disabled =
+    true;
+
+  generateButton.textContent =
+    "Generating...";
+
+
+  try {
+
+    const gif =
+      new GIF({
+
+        workers: 2,
+
+        quality: 10,
+
+        width: W,
+
+        height: H,
+
+        workerScript:
+          "https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js"
+
+      });
+
+
+    const frameCount =
+      60;
+
+
+    const frameDelay =
+      70;
+
+
+    /*
+     * Generate the same animation
+     * shown in the preview.
+     */
+
+    for (
+      let i = 0;
+      i < frameCount;
+      i++
+    ) {
+
+      const timeline =
+        i /
+        (
+          frameCount -
+          1
+        );
+
+
+      render(
+        timeline
+      );
+
+
+      gif.addFrame(
+        canvas,
+        {
+          copy: true,
+          delay: frameDelay
+        }
+      );
+
+    }
+
+
+    gif.on(
+      "finished",
+      function (blob) {
+
+        const downloadUrl =
+          URL.createObjectURL(
+            blob
+          );
+
+
+        const link =
+          document.createElement(
+            "a"
+          );
+
+
+        link.href =
+          downloadUrl;
+
+
+        link.download =
+          "of-ambition-and-grind-banner.gif";
+
+
+        document.body.appendChild(
+          link
+        );
+
+
+        link.click();
+
+
+        link.remove();
+
+
+        setTimeout(
+          function () {
+
+            URL.revokeObjectURL(
+              downloadUrl
+            );
+
+          },
+          1000
+        );
+
+
+        generateButton.disabled =
+          false;
+
+        generateButton.textContent =
+          "Generate GIF";
+
+      }
+    );
+
+
+    gif.on(
+      "abort",
+      function () {
+
+        generateButton.disabled =
+          false;
+
+        generateButton.textContent =
+          "Generate GIF";
+
+      }
+    );
+
+
+    gif.render();
+
+
+  } catch (error) {
+
+    console.error(
+      "GIF generation failed:",
+      error
+    );
+
+
+    alert(
+      "GIF generation failed. The preview is still working."
+    );
+
+
+    generateButton.disabled =
+      false;
+
+    generateButton.textContent =
+      "Generate GIF";
+
+  }
+
+}
+
+
+if (generateButton) {
+
+  generateButton.addEventListener(
+    "click",
+    generateGif
+  );
+
+}
+
+
+/* =========================================================
+   INITIAL FRAME
+========================================================= */
+
+/*
+ * Draw immediately.
+ * This guarantees that the canvas is never blank while
+ * the image is loading.
+ */
+
+render(0);
