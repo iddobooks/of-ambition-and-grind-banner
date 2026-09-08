@@ -1,5 +1,3 @@
-"use strict";
-
 const W = 600;
 const H = 200;
 
@@ -14,15 +12,13 @@ const urlInput = document.getElementById("urlInput");
 
 const openingColorInput = document.getElementById("openingColorInput");
 const revealColorInput = document.getElementById("revealColorInput");
-
 const photoInput = document.getElementById("photoInput");
-const sharpnessInput = document.getElementById("sharpnessInput");
-const spreadInput = document.getElementById("spreadInput");
+const revealOpacityInput = document.getElementById("revealOpacityInput");
+const transparentInput = document.getElementById("transparentInput");
 const speedInput = document.getElementById("speedInput");
 
 const photoValue = document.getElementById("photoValue");
-const sharpnessValue = document.getElementById("sharpnessValue");
-const spreadValue = document.getElementById("spreadValue");
+const revealOpacityValue = document.getElementById("revealOpacityValue");
 const speedValue = document.getElementById("speedValue");
 
 const pngBtn = document.getElementById("pngBtn");
@@ -31,29 +27,25 @@ const status = document.getElementById("status");
 
 let backgroundImage = null;
 let previewStart = performance.now();
-let previewRAF = null;
-let objectUrl = null;
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
 
 function hexToRgb(hex) {
-  const clean = String(hex || "#000000").replace("#", "");
-
-  const value = parseInt(clean, 16);
+  const clean = hex.replace("#", "");
+  const n = parseInt(clean, 16);
 
   return {
-    r: (value >> 16) & 255,
-    g: (value >> 8) & 255,
-    b: value & 255
+    r: (n >> 16) & 255,
+    g: (n >> 8) & 255,
+    b: n & 255
   };
 }
 
 function rgba(hex, alpha) {
-  const rgb = hexToRgb(hex);
-
-  return `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alpha})`;
+  const c = hexToRgb(hex);
+  return `rgba(${c.r},${c.g},${c.b},${alpha})`;
 }
 
 function getSettings() {
@@ -61,210 +53,156 @@ function getSettings() {
     title: titleInput.value.trim() || "OF AMBITION AND GRIND",
     sub: subInput.value.trim(),
     cta: ctaInput.value.trim(),
-    purchaseUrl: urlInput.value.trim(),
-
     openingColor: openingColorInput.value,
     revealColor: revealColorInput.value,
-
     photoVisibility: Number(photoInput.value) / 100,
-    sharpness: Number(sharpnessInput.value) / 100,
-    spread: Number(spreadInput.value) / 100,
+    revealOpacity: Number(revealOpacityInput.value) / 100,
+    transparent: transparentInput.checked,
     speed: Number(speedInput.value) / 100
   };
 }
 
 function updateOutputs() {
   photoValue.textContent = `${photoInput.value}%`;
-  sharpnessValue.textContent = `${sharpnessInput.value}%`;
-  spreadValue.textContent = `${spreadInput.value}%`;
+  revealOpacityValue.textContent = `${revealOpacityInput.value}%`;
   speedValue.textContent = `${speedInput.value}%`;
 }
 
-function restartPreview() {
-  previewStart = performance.now();
-}
-
 function drawCoverImage(image, alpha = 1) {
-  if (!image || !image.complete || !image.naturalWidth) {
+  if (!image) {
     ctx.fillStyle = "#222";
     ctx.fillRect(0, 0, W, H);
     return;
   }
 
-  const imageWidth = image.naturalWidth || image.width;
-  const imageHeight = image.naturalHeight || image.height;
-
   const scale = Math.max(
-    W / imageWidth,
-    H / imageHeight
+    W / image.width,
+    H / image.height
   );
 
-  const drawWidth = imageWidth * scale;
-  const drawHeight = imageHeight * scale;
+  const dw = image.width * scale;
+  const dh = image.height * scale;
 
-  const drawX = (W - drawWidth) / 2;
-  const drawY = (H - drawHeight) / 2;
+  const dx = (W - dw) / 2;
+  const dy = (H - dh) / 2;
 
   ctx.save();
   ctx.globalAlpha = alpha;
-  ctx.drawImage(
-    image,
-    drawX,
-    drawY,
-    drawWidth,
-    drawHeight
-  );
+  ctx.drawImage(image, dx, dy, dw, dh);
   ctx.restore();
 }
 
-/*
-  Reveal shape.
 
-  The animation remains a bottom-centre reveal.
-  The geometry is kept inside the canvas so it cannot disappear
-  because of a canvas-wide transform.
+/*
+  ============================================================
+  DOWNWARD-POINTING SEMICIRCLE REVEAL
+  ============================================================
+
+  This is ONE shape.
+
+  It is NOT:
+  - rays
+  - triangles
+  - a fan
+  - a radial burst
+  - a rotating shape
+
+  The shape has:
+
+       FLAT TOP
+  -------------------
+       \           /
+        \         /
+         \       /
+          \_____/
+             ↓
+
+  The curved edge points downward.
+
+  The animation moves this same shape through the banner.
 */
-function drawReveal(progress, settings) {
+function drawDownwardSemicircle(progress, settings) {
   const p = clamp(progress, 0, 1);
 
-  if (p <= 0) {
+  if (p <= 0 || settings.transparent) {
     return;
   }
 
-  const originX = W * 0.50;
-  const originY = H + 12;
+  /*
+    Radius controls the width of the semicircle.
 
-  const spread = settings.spread;
+    The radius is deliberately larger than half the banner width
+    so the semicircle extends beyond the left and right edges.
+  */
+  const radius = W * 0.66;
 
-  const maximumWidth =
-    W * (0.70 + spread * 0.95);
-
-  const maximumHeight = H * 1.18;
-
-  const width =
-    maximumWidth * Math.pow(p, 0.72);
-
-  const height =
-    maximumHeight * Math.pow(p, 0.70);
+  const centerX = W / 2;
 
   /*
-    This is the asymmetric contour.
-
-    The upper edge deliberately has different left and right
-    curves so that a vertical flip is visually distinguishable.
+    Start above the banner and move downward.
   */
+  const startY = -radius * 1.05;
+  const endY = H + radius * 0.18;
 
-  const left = originX - width / 2;
-  const right = originX + width / 2;
-  const top = originY - height;
+  const centerY =
+    startY + (endY - startY) * p;
 
   ctx.save();
 
   ctx.fillStyle = rgba(
     settings.revealColor,
-    0.94
+    settings.revealOpacity
   );
 
+  /*
+    TRUE DOWNWARD-FACING SEMICIRCLE.
+
+    The diameter is the horizontal line at centerY.
+    The arc travels from the left side downward and around
+    to the right side.
+  */
   ctx.beginPath();
 
-  ctx.moveTo(originX, originY);
-
-  ctx.bezierCurveTo(
-    originX - width * 0.08,
-    originY - height * 0.30,
-    left + width * 0.08,
-    top + height * 0.17,
-    left,
-    top + height * 0.04
+  ctx.moveTo(
+    centerX - radius,
+    centerY
   );
 
-  ctx.bezierCurveTo(
-    left + width * 0.15,
-    top - height * 0.015,
-    left + width * 0.35,
-    top + height * 0.04,
-    left + width * 0.48,
-    top
+  ctx.arc(
+    centerX,
+    centerY,
+    radius,
+    Math.PI,
+    0,
+    false
   );
 
-  ctx.bezierCurveTo(
-    left + width * 0.64,
-    top + height * 0.055,
-    right - width * 0.16,
-    top + height * 0.14,
-    right,
-    top + height * 0.10
-  );
-
-  ctx.bezierCurveTo(
-    right - width * 0.04,
-    originY - height * 0.34,
-    originX + width * 0.08,
-    originY - height * 0.18,
-    originX,
-    originY
+  ctx.lineTo(
+    centerX - radius,
+    centerY
   );
 
   ctx.closePath();
+
   ctx.fill();
-
-  /*
-    Soft edge.
-  */
-  if (settings.sharpness < 0.95) {
-    const softAlpha =
-      (1 - settings.sharpness) * 0.22;
-
-    ctx.fillStyle = rgba(
-      settings.revealColor,
-      softAlpha
-    );
-
-    ctx.beginPath();
-
-    ctx.moveTo(originX, originY);
-
-    ctx.bezierCurveTo(
-      originX - width * 0.16,
-      originY - height * 0.35,
-      left - width * 0.025,
-      top + height * 0.12,
-      left - width * 0.025,
-      top
-    );
-
-    ctx.bezierCurveTo(
-      left + width * 0.20,
-      top - height * 0.035,
-      right + width * 0.015,
-      top + height * 0.08,
-      right + width * 0.015,
-      top + height * 0.11
-    );
-
-    ctx.bezierCurveTo(
-      right,
-      originY - height * 0.25,
-      originX + width * 0.15,
-      originY - height * 0.12,
-      originX,
-      originY
-    );
-
-    ctx.closePath();
-    ctx.fill();
-  }
 
   ctx.restore();
 }
 
-function drawFinalOverlay(settings) {
-  const photoVisibility = settings.photoVisibility;
 
-  const overlayOpacity =
-    clamp(1 - photoVisibility, 0, 1);
+/*
+  Final reveal state.
+*/
+function drawFinalReveal(settings) {
+  if (settings.transparent) {
+    return;
+  }
 
-  if (overlayOpacity <= 0) {
+  const finalOpacity =
+    (1 - settings.photoVisibility) *
+    settings.revealOpacity;
+
+  if (finalOpacity <= 0) {
     return;
   }
 
@@ -272,7 +210,7 @@ function drawFinalOverlay(settings) {
 
   ctx.fillStyle = rgba(
     settings.revealColor,
-    overlayOpacity
+    finalOpacity
   );
 
   ctx.fillRect(
@@ -285,6 +223,10 @@ function drawFinalOverlay(settings) {
   ctx.restore();
 }
 
+
+/*
+  Banner text.
+*/
 function drawText(progress, settings) {
   const p = clamp(progress, 0, 1);
 
@@ -377,6 +319,10 @@ function drawText(progress, settings) {
   ctx.restore();
 }
 
+
+/*
+  Render one animation frame.
+*/
 function renderFrame(progress) {
   const settings = getSettings();
 
@@ -388,7 +334,7 @@ function renderFrame(progress) {
   );
 
   /*
-    1. Photograph.
+    Base photograph.
   */
   drawCoverImage(
     backgroundImage,
@@ -396,14 +342,15 @@ function renderFrame(progress) {
   );
 
   /*
-    2. Opening dark overlay.
+    Initial dark overlay.
   */
   const openingOpacity =
     1 - settings.photoVisibility;
 
-  if (openingOpacity > 0) {
-    ctx.save();
-
+  if (
+    progress < 1 &&
+    openingOpacity > 0
+  ) {
     ctx.fillStyle = rgba(
       settings.openingColor,
       openingOpacity
@@ -415,27 +362,25 @@ function renderFrame(progress) {
       W,
       H
     );
-
-    ctx.restore();
   }
 
   /*
-    3. Animated reveal.
+    SINGLE DOWNWARD SEMICIRCLE.
   */
-  drawReveal(
+  drawDownwardSemicircle(
     progress,
     settings
   );
 
   /*
-    4. Final state.
+    Final state.
   */
   if (progress >= 1) {
-    drawFinalOverlay(settings);
+    drawFinalReveal(settings);
   }
 
   /*
-    5. Text.
+    Text.
   */
   drawText(
     progress,
@@ -443,101 +388,82 @@ function renderFrame(progress) {
   );
 }
 
-function animationProgress(elapsed, speed) {
-  const safeSpeed =
-    clamp(speed, 0.4, 1.4);
 
+/*
+  Animation timing.
+*/
+function animationProgress(timeMs, speed) {
   const cycle =
-    3600 / safeSpeed;
+    3600 /
+    clamp(
+      speed,
+      0.4,
+      1.4
+    );
 
   const t =
-    (elapsed % cycle) / cycle;
+    (timeMs % cycle) /
+    cycle;
 
   /*
-    Opening hold.
+    30% opening hold
+    38% reveal
+    32% final state
   */
   if (t < 0.30) {
     return 0;
   }
 
-  /*
-    Reveal.
-  */
-  if (t < 0.70) {
+  if (t < 0.68) {
     const q =
-      (t - 0.30) / 0.40;
+      (t - 0.30) /
+      0.38;
 
-    return q * q * (3 - 2 * q);
+    /*
+      Smooth ease-in/ease-out.
+    */
+    return (
+      q * q *
+      (3 - 2 * q)
+    );
   }
 
-  /*
-    Final hold.
-  */
   return 1;
 }
 
+
+/*
+  Continuous preview.
+*/
 function animatePreview(now) {
   const settings = getSettings();
 
-  const elapsed =
-    now - previewStart;
-
   const progress =
     animationProgress(
-      elapsed,
+      now - previewStart,
       settings.speed
     );
 
   renderFrame(progress);
 
-  previewRAF =
-    requestAnimationFrame(
-      animatePreview
-    );
+  requestAnimationFrame(
+    animatePreview
+  );
 }
 
-function loadImageFromFile(file) {
-  if (!file) {
-    return;
-  }
 
-  if (!file.type.startsWith("image/")) {
-    status.textContent =
-      "Please choose an image file.";
-
-    return;
-  }
-
-  if (objectUrl) {
-    URL.revokeObjectURL(objectUrl);
-    objectUrl = null;
-  }
-
-  objectUrl =
-    URL.createObjectURL(file);
-
-  const img =
-    new Image();
-
-  img.onload = () => {
-    backgroundImage = img;
-
-    status.textContent =
-      "Background image loaded.";
-
-    restartPreview();
-  };
-
-  img.onerror = () => {
-    status.textContent =
-      "Could not load that image.";
-
-    backgroundImage = null;
-  };
-
-  img.src = objectUrl;
+/*
+  Restart animation.
+*/
+function restartPreview() {
+  previewStart =
+    performance.now();
 }
 
+
+/*
+  Background image upload.
+*/
 imageInput.addEventListener(
   "change",
   () => {
@@ -545,10 +471,42 @@ imageInput.addEventListener(
       imageInput.files &&
       imageInput.files[0];
 
-    loadImageFromFile(file);
+    if (!file) {
+      return;
+    }
+
+    const url =
+      URL.createObjectURL(file);
+
+    const img =
+      new Image();
+
+    img.onload = () => {
+      backgroundImage = img;
+
+      URL.revokeObjectURL(url);
+
+      status.textContent =
+        "Background image loaded.";
+
+      restartPreview();
+    };
+
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+
+      status.textContent =
+        "Could not load that image.";
+    };
+
+    img.src = url;
   }
 );
 
+
+/*
+  Controls.
+*/
 [
   titleInput,
   subInput,
@@ -557,22 +515,39 @@ imageInput.addEventListener(
   openingColorInput,
   revealColorInput,
   photoInput,
-  sharpnessInput,
-  spreadInput,
+  revealOpacityInput,
+  transparentInput,
   speedInput
-].forEach((element) => {
-  element.addEventListener(
-    "input",
-    () => {
-      updateOutputs();
-      restartPreview();
-    }
-  );
-});
+].forEach(
+  (el) => {
 
+    el.addEventListener(
+      "input",
+      () => {
+        updateOutputs();
+        restartPreview();
+      }
+    );
+
+    el.addEventListener(
+      "change",
+      () => {
+        updateOutputs();
+        restartPreview();
+      }
+    );
+
+  }
+);
+
+
+/*
+  PNG export.
+*/
 pngBtn.addEventListener(
   "click",
   () => {
+
     renderFrame(1);
 
     const link =
@@ -582,23 +557,28 @@ pngBtn.addEventListener(
       "of-ambition-and-grind-banner.png";
 
     link.href =
-      canvas.toDataURL("image/png");
+      canvas.toDataURL(
+        "image/png"
+      );
 
-    document.body.appendChild(link);
     link.click();
-    link.remove();
 
     status.textContent =
       "PNG created.";
   }
 );
 
+
+/*
+  GIF export.
+*/
 gifBtn.addEventListener(
   "click",
-  () => {
+  async () => {
+
     if (!window.GIF) {
       status.textContent =
-        "GIF library did not load. Check your internet connection and refresh the page.";
+        "GIF library did not load. Check your internet connection.";
 
       return;
     }
@@ -619,9 +599,6 @@ gifBtn.addEventListener(
         width: W,
         height: H,
 
-        /*
-          Keep the worker on the CDN used by gif.js.
-        */
         workerScript:
           "https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js"
       });
@@ -631,21 +608,37 @@ gifBtn.addEventListener(
       i < frameCount;
       i++
     ) {
+
       const t =
-        i / (frameCount - 1);
+        i /
+        (frameCount - 1);
 
       let progress;
 
+      /*
+        GIF timing:
+        28% opening
+        44% reveal
+        28% final
+      */
       if (t < 0.28) {
+
         progress = 0;
+
       } else if (t < 0.72) {
+
         const q =
-          (t - 0.28) / 0.44;
+          (t - 0.28) /
+          0.44;
 
         progress =
-          q * q * (3 - 2 * q);
+          q * q *
+          (3 - 2 * q);
+
       } else {
+
         progress = 1;
+
       }
 
       renderFrame(progress);
@@ -661,17 +654,16 @@ gifBtn.addEventListener(
 
     gif.on(
       "progress",
-      (value) => {
+      (p) => {
+
         status.textContent =
-          `Generating GIF… ${Math.round(value * 100)}%`;
+          `Generating GIF… ${Math.round(p * 100)}%`;
       }
     );
 
     gif.on(
       "finished",
       (blob) => {
-        const url =
-          URL.createObjectURL(blob);
 
         const link =
           document.createElement("a");
@@ -679,14 +671,17 @@ gifBtn.addEventListener(
         link.download =
           "of-ambition-and-grind-banner.gif";
 
-        link.href = url;
+        link.href =
+          URL.createObjectURL(blob);
 
-        document.body.appendChild(link);
         link.click();
-        link.remove();
 
         setTimeout(
-          () => URL.revokeObjectURL(url),
+          () => {
+            URL.revokeObjectURL(
+              link.href
+            );
+          },
           5000
         );
 
@@ -703,6 +698,7 @@ gifBtn.addEventListener(
     gif.on(
       "abort",
       () => {
+
         status.textContent =
           "GIF generation cancelled.";
 
@@ -714,12 +710,15 @@ gifBtn.addEventListener(
     );
 
     try {
+
       gif.render();
+
     } catch (error) {
+
       console.error(error);
 
       status.textContent =
-        "GIF generation failed. Refresh the page and try again.";
+        "GIF generation failed. Check the browser console for details.";
 
       gifBtn.disabled = false;
       pngBtn.disabled = false;
@@ -729,47 +728,51 @@ gifBtn.addEventListener(
   }
 );
 
-function loadDefaultBackground() {
-  const img =
-    new Image();
 
-  img.onload = () => {
-    backgroundImage = img;
-
-    status.textContent =
-      "Ready — original book image loaded.";
-
-    restartPreview();
-  };
-
-  img.onerror = () => {
-    backgroundImage = null;
-
-    status.textContent =
-      "Ready — choose a background image.";
-
-    restartPreview();
-  };
-
-  /*
-    IMPORTANT:
-    This is relative to the GitHub Pages project root.
-  */
-  img.src =
-    "./assets/book-background.png";
-}
-
+/*
+  Initialize controls.
+*/
 updateOutputs();
 
-loadDefaultBackground();
 
+/*
+  Load the ORIGINAL book image automatically.
+
+  The file must exist at:
+
+      assets/book-background.png
+*/
+const defaultImage =
+  new Image();
+
+defaultImage.onload = () => {
+
+  backgroundImage =
+    defaultImage;
+
+  status.textContent =
+    "Ready — original book image loaded.";
+
+  restartPreview();
+};
+
+defaultImage.onerror = () => {
+
+  status.textContent =
+    "Ready — choose a background image.";
+
+  restartPreview();
+};
+
+defaultImage.src =
+  "./assets/book-background.png";
+
+
+/*
+  Start preview.
+*/
 restartPreview();
 
-if (previewRAF) {
-  cancelAnimationFrame(previewRAF);
-}
-
-previewRAF =
-  requestAnimationFrame(
-    animatePreview
-  );
+requestAnimationFrame(
+  animatePreview
+);
