@@ -32,8 +32,15 @@ bgImage.onload = () => {
 };
 
 bgImage.onerror = () => {
-  console.error("Could not load assets/book-background.png");
+  console.error(
+    "Could not load assets/book-background.png"
+  );
 };
+
+
+/* =====================================================
+   HELPERS
+===================================================== */
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
@@ -65,11 +72,19 @@ function hexToRgba(hex, alpha) {
   return `rgba(${r},${g},${b},${alpha})`;
 }
 
+
+/* =====================================================
+   BACKGROUND
+===================================================== */
+
 function drawCoverImage() {
   if (!imageReady) return;
 
-  const imageRatio = bgImage.width / bgImage.height;
-  const canvasRatio = W / H;
+  const imageRatio =
+    bgImage.width / bgImage.height;
+
+  const canvasRatio =
+    W / H;
 
   let sx = 0;
   let sy = 0;
@@ -77,11 +92,17 @@ function drawCoverImage() {
   let sh = bgImage.height;
 
   if (imageRatio > canvasRatio) {
-    sw = bgImage.height * canvasRatio;
-    sx = (bgImage.width - sw) / 2;
+    sw =
+      bgImage.height * canvasRatio;
+
+    sx =
+      (bgImage.width - sw) / 2;
   } else {
-    sh = bgImage.width / canvasRatio;
-    sy = (bgImage.height - sh) / 2;
+    sh =
+      bgImage.width / canvasRatio;
+
+    sy =
+      (bgImage.height - sh) / 2;
   }
 
   ctx.drawImage(
@@ -97,48 +118,59 @@ function drawCoverImage() {
   );
 }
 
+
+/* =====================================================
+   OPENING OVERLAY
+===================================================== */
+
 function drawOpeningOverlay() {
   ctx.save();
 
-  ctx.fillStyle = settings.openingColor;
+  ctx.fillStyle =
+    settings.openingColor;
 
   const alpha =
     0.72 -
     (settings.photoVisibility / 100) * 0.52;
 
-  ctx.globalAlpha = clamp(alpha, 0.15, 0.80);
+  ctx.globalAlpha =
+    clamp(alpha, 0.15, 0.80);
 
-  ctx.fillRect(0, 0, W, H);
+  ctx.fillRect(
+    0,
+    0,
+    W,
+    H
+  );
 
   ctx.restore();
 }
 
 
-/*
-========================================================
-  REVEAL SHAPE
-========================================================
+/* =====================================================
+   REVEAL SHAPE
+=====================================================
 
-  IMPORTANT:
+   IMPORTANT:
 
-  The animation progress is unchanged.
+   The animation direction remains unchanged.
 
-  ONLY THE SHAPE ITSELF is vertically flipped.
+   We are NOT flipping the canvas.
 
-  The canvas/background/text are NOT flipped.
+   We are NOT moving the animation from bottom to top.
 
-  This is the actual vertical mirror:
-      y  ->  H - y
+   We are flipping ONLY the geometry of the shape
+   vertically inside its own bounding box.
 
-  So the overlay contour is turned upside down while
-  the rest of the animation remains untouched.
-========================================================
-*/
+===================================================== */
 
 function drawReveal(progress) {
-  const p = clamp(progress, 0, 1);
 
-  const revealColor = settings.revealColor;
+  const p =
+    clamp(progress, 0, 1);
+
+  const revealColor =
+    settings.revealColor;
 
   const spread =
     0.35 +
@@ -147,143 +179,245 @@ function drawReveal(progress) {
   const softness =
     settings.revealSoftness / 100;
 
-  const originX = W * 0.5;
+  /*
+   * Original animation position.
+   */
+  const originX =
+    W * 0.5;
+
+  const originY =
+    H + 18;
+
+  const maxWidth =
+    W * spread;
+
+  const maxHeight =
+    H + 80;
 
   /*
-   * Keep the SAME animation timing and size progression.
+   * Animation growth remains exactly the same.
    */
-  const originY = H + 18;
-
-  const maxWidth = W * spread;
-  const maxHeight = H + 80;
-
   const currentWidth =
-    maxWidth * Math.pow(p, 0.72);
+    maxWidth *
+    Math.pow(p, 0.72);
 
   const currentHeight =
-    maxHeight * Math.pow(p, 0.70);
+    maxHeight *
+    Math.pow(p, 0.70);
 
-  /*
-   * Original shape coordinates.
-   */
   const left =
-    originX - currentWidth / 2;
+    originX -
+    currentWidth / 2;
 
   const right =
-    originX + currentWidth / 2;
+    originX +
+    currentWidth / 2;
 
   const top =
-    originY - currentHeight;
+    originY -
+    currentHeight;
+
 
   /*
-   * ----------------------------------------------------
-   * VERTICAL FLIP
-   * ----------------------------------------------------
+   * -------------------------------------------------
+   * VERTICAL FLIP OF THE SHAPE ONLY
+   * -------------------------------------------------
    *
-   * We draw the shape into its own coordinate system,
-   * then mirror ONLY that shape vertically.
+   * Every Y coordinate is mirrored around the
+   * horizontal centre of the shape's own bounding box.
    *
-   * Nothing else on the canvas is affected.
+   * This is:
+   *
+   *     flippedY = top + originY - originalY
+   *
+   * NOT:
+   *
+   *     flippedY = H - originalY
+   *
+   * because the latter flips against the entire canvas
+   * and pushes the shape out of view.
    */
+
+  function flipY(y) {
+    return (
+      top +
+      originY -
+      y
+    );
+  }
+
 
   ctx.save();
 
-  /*
-   * Move to bottom edge and flip the Y axis.
-   */
-  ctx.translate(0, H);
-  ctx.scale(1, -1);
-
   ctx.beginPath();
 
+
   /*
-   * Original lower centre.
+   * ORIGINAL LOWER CENTRE
+   * becomes the vertically flipped upper centre.
    */
   ctx.moveTo(
     originX,
-    originY
+    flipY(originY)
   );
 
+
   /*
-   * LEFT CONTOUR
+   * LEFT LOWER CURVE
    */
   ctx.bezierCurveTo(
-    originX - currentWidth * 0.10,
-    originY - currentHeight * 0.10,
 
-    left + currentWidth * 0.02,
-    originY - currentHeight * 0.34,
+    originX -
+      currentWidth * 0.10,
 
-    left + currentWidth * 0.16,
-    originY - currentHeight * 0.56
+    flipY(
+      originY -
+      currentHeight * 0.10
+    ),
+
+    left +
+      currentWidth * 0.02,
+
+    flipY(
+      originY -
+      currentHeight * 0.34
+    ),
+
+    left +
+      currentWidth * 0.16,
+
+    flipY(
+      originY -
+      currentHeight * 0.56
+    )
   );
 
+
   /*
-   * BROAD CURVED TOP
+   * BROAD CURVED SECTION
    */
   ctx.bezierCurveTo(
-    left + currentWidth * 0.30,
-    originY - currentHeight * 0.78,
 
-    left + currentWidth * 0.50,
-    top + currentHeight * 0.04,
+    left +
+      currentWidth * 0.30,
+
+    flipY(
+      originY -
+      currentHeight * 0.78
+    ),
+
+    left +
+      currentWidth * 0.50,
+
+    flipY(
+      top +
+      currentHeight * 0.04
+    ),
 
     originX,
-    top
+
+    flipY(top)
   );
+
 
   /*
-   * RIGHT CONTOUR
+   * RIGHT SIDE
    */
   ctx.bezierCurveTo(
-    right - currentWidth * 0.50,
-    top + currentHeight * 0.04,
 
-    right - currentWidth * 0.30,
-    originY - currentHeight * 0.78,
+    right -
+      currentWidth * 0.50,
 
-    right - currentWidth * 0.16,
-    originY - currentHeight * 0.56
+    flipY(
+      top +
+      currentHeight * 0.04
+    ),
+
+    right -
+      currentWidth * 0.30,
+
+    flipY(
+      originY -
+      currentHeight * 0.78
+    ),
+
+    right -
+      currentWidth * 0.16,
+
+    flipY(
+      originY -
+      currentHeight * 0.56
+    )
   );
+
 
   ctx.bezierCurveTo(
-    right - currentWidth * 0.02,
-    originY - currentHeight * 0.34,
 
-    originX + currentWidth * 0.10,
-    originY - currentHeight * 0.10,
+    right -
+      currentWidth * 0.02,
+
+    flipY(
+      originY -
+      currentHeight * 0.34
+    ),
+
+    originX +
+      currentWidth * 0.10,
+
+    flipY(
+      originY -
+      currentHeight * 0.10
+    ),
 
     originX,
-    originY
+
+    flipY(originY)
   );
+
 
   ctx.closePath();
 
+
   /*
-   * Soft edge.
+   * Softness
    */
   if (softness > 0) {
+
     ctx.shadowColor =
-      hexToRgba(revealColor, 0.20);
+      hexToRgba(
+        revealColor,
+        0.20
+      );
 
     ctx.shadowBlur =
-      8 + softness * 18;
+      8 +
+      softness * 18;
 
     ctx.shadowOffsetX = 0;
     ctx.shadowOffsetY = 0;
   }
 
-  ctx.fillStyle = revealColor;
+
+  ctx.fillStyle =
+    revealColor;
+
   ctx.fill();
 
   ctx.restore();
 }
 
 
+/* =====================================================
+   FINAL WHITE STATE
+===================================================== */
+
 function drawFinalOverlay() {
+
   ctx.save();
 
-  ctx.fillStyle = settings.revealColor;
+  ctx.fillStyle =
+    settings.revealColor;
+
   ctx.globalAlpha = 0.96;
 
   ctx.fillRect(
@@ -297,8 +431,14 @@ function drawFinalOverlay() {
 }
 
 
+/* =====================================================
+   TEXT
+===================================================== */
+
 function drawText(progress) {
-  const p = clamp(progress, 0, 1);
+
+  const p =
+    clamp(progress, 0, 1);
 
   const textTransition =
     clamp(
@@ -313,10 +453,15 @@ function drawText(progress) {
   const blackAlpha =
     textTransition;
 
+
   ctx.save();
 
-  ctx.textBaseline = "middle";
-  ctx.textAlign = "left";
+  ctx.textBaseline =
+    "middle";
+
+  ctx.textAlign =
+    "left";
+
 
   /*
    * TITLE
@@ -342,6 +487,7 @@ function drawText(progress) {
     63
   );
 
+
   /*
    * SUPPORTING TEXT
    */
@@ -365,6 +511,7 @@ function drawText(progress) {
     30,
     88
   );
+
 
   /*
    * CTA
@@ -390,17 +537,17 @@ function drawText(progress) {
     125
   );
 
+
   ctx.restore();
 }
 
 
-/*
-========================================================
-  PREVIEW TIMELINE
-========================================================
-*/
+/* =====================================================
+   PREVIEW TIMELINE
+===================================================== */
 
 function renderPreview(progress) {
+
   if (!imageReady) return;
 
   ctx.clearRect(
@@ -410,10 +557,14 @@ function renderPreview(progress) {
     H
   );
 
+  /*
+   * Background is never flipped.
+   */
   drawCoverImage();
 
+
   /*
-   * OPENING
+   * DARK OPENING
    */
   if (progress < 0.30) {
 
@@ -426,10 +577,13 @@ function renderPreview(progress) {
       openingProgress * 0.15
     );
 
+  }
+
+
   /*
    * REVEAL
    */
-  } else if (progress < 0.70) {
+  else if (progress < 0.70) {
 
     drawOpeningOverlay();
 
@@ -437,45 +591,55 @@ function renderPreview(progress) {
       (progress - 0.30) / 0.40;
 
     drawReveal(
-      easeInOut(revealProgress)
+      easeInOut(
+        revealProgress
+      )
     );
 
     drawText(
       revealProgress
     );
 
+  }
+
+
   /*
-   * FINAL
+   * FINAL WHITE STATE
    */
-  } else {
+  else {
 
     drawFinalOverlay();
 
     drawText(1);
+
   }
 }
 
 
-/*
-========================================================
-  ANIMATION LOOP
-========================================================
-*/
+/* =====================================================
+   ANIMATION LOOP
+===================================================== */
 
 function previewLoop(now) {
+
   const elapsed =
-    now - animationStart;
+    now -
+    animationStart;
 
   const speedFactor =
     settings.speed / 80;
 
   const duration =
-    4200 / speedFactor;
+    4200 /
+    speedFactor;
 
   const progress =
-    (elapsed % duration) / duration;
+    (elapsed % duration) /
+    duration;
 
-  renderPreview(progress);
+  renderPreview(
+    progress
+  );
 
   requestAnimationFrame(
     previewLoop
@@ -487,13 +651,15 @@ requestAnimationFrame(
 );
 
 
-/*
-========================================================
-  CONTROLS
-========================================================
-*/
+/* =====================================================
+   CONTROLS
+===================================================== */
 
-function bindInput(id, property) {
+function bindInput(
+  id,
+  property
+) {
+
   const element =
     document.getElementById(id);
 
@@ -502,13 +668,20 @@ function bindInput(id, property) {
   element.addEventListener(
     "input",
     () => {
+
       settings[property] =
         element.value;
+
     }
   );
 }
 
-function bindValue(id, property) {
+
+function bindValue(
+  id,
+  property
+) {
+
   const element =
     document.getElementById(id);
 
@@ -527,12 +700,16 @@ function bindValue(id, property) {
         );
 
       if (output) {
+
         output.textContent =
           element.value;
+
       }
+
     }
   );
 }
+
 
 bindInput(
   "bookTitle",
@@ -564,6 +741,7 @@ bindInput(
   "revealColor"
 );
 
+
 bindValue(
   "photoVisibility",
   "photoVisibility"
@@ -585,43 +763,62 @@ bindValue(
 );
 
 
-/*
-========================================================
-  GIF GENERATION
-========================================================
-*/
+/* =====================================================
+   GIF GENERATION
+===================================================== */
 
 async function generateGif() {
 
-  if (typeof GIF === "undefined") {
+  if (
+    typeof GIF ===
+    "undefined"
+  ) {
+
     alert(
       "GIF library has not loaded yet."
     );
+
     return;
   }
+
 
   const button =
     document.getElementById(
       "generateGif"
     );
 
+
   if (button) {
-    button.disabled = true;
+
+    button.disabled =
+      true;
+
     button.textContent =
       "Generating...";
+
   }
 
-  const gif = new GIF({
-    workers: 2,
-    quality: 10,
-    width: W,
-    height: H,
-    workerScript:
-      "https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js"
-  });
+
+  const gif =
+    new GIF({
+
+      workers: 2,
+
+      quality: 10,
+
+      width: W,
+
+      height: H,
+
+      workerScript:
+        "https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js"
+
+    });
+
 
   const frameCount = 60;
   const frameDelay = 55;
+
 
   for (
     let i = 0;
@@ -630,9 +827,12 @@ async function generateGif() {
   ) {
 
     const progress =
-      i / (frameCount - 1);
+      i /
+      (frameCount - 1);
 
-    renderPreview(progress);
+    renderPreview(
+      progress
+    );
 
     gif.addFrame(
       ctx,
@@ -643,41 +843,60 @@ async function generateGif() {
     );
   }
 
+
   gif.on(
     "finished",
     blob => {
 
       const url =
-        URL.createObjectURL(blob);
+        URL.createObjectURL(
+          blob
+        );
 
       const link =
-        document.createElement("a");
+        document.createElement(
+          "a"
+        );
 
       link.href = url;
 
       link.download =
         "of-ambition-and-grind-banner.gif";
 
-      document.body.appendChild(link);
+      document.body.appendChild(
+        link
+      );
 
       link.click();
 
       link.remove();
 
+
       setTimeout(
         () => {
-          URL.revokeObjectURL(url);
+
+          URL.revokeObjectURL(
+            url
+          );
+
         },
         1000
       );
 
+
       if (button) {
-        button.disabled = false;
+
+        button.disabled =
+          false;
+
         button.textContent =
           "Generate GIF";
+
       }
+
     }
   );
+
 
   gif.render();
 }
@@ -688,24 +907,26 @@ const gifButton =
     "generateGif"
   );
 
+
 if (gifButton) {
+
   gifButton.addEventListener(
     "click",
     generateGif
   );
+
 }
 
 
-/*
-========================================================
-  RESET
-========================================================
-*/
+/* =====================================================
+   RESET
+===================================================== */
 
 const resetButton =
   document.getElementById(
     "resetPreview"
   );
+
 
 if (resetButton) {
 
@@ -715,6 +936,8 @@ if (resetButton) {
 
       animationStart =
         performance.now();
+
     }
   );
+
 }
