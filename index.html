@@ -1,27 +1,50 @@
 <!doctype html>
 <html lang="en">
+
 <head>
+
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Of Ambition and Grind — Banner Generator</title>
-  <link rel="stylesheet" href="style.css">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
+
+  <title>
+    Of Ambition and Grind — Banner Generator
+  </title>
+
+  <link
+    rel="stylesheet"
+    href="style.css"
+  >
+
 </head>
+
 
 <body>
 
   <main class="app">
 
+
     <header class="topbar">
 
       <div>
-        <p class="eyebrow">EMAIL SIGNATURE BANNER</p>
 
-        <h1>Of Ambition and Grind</h1>
+        <p class="eyebrow">
+          EMAIL SIGNATURE BANNER
+        </p>
+
+        <h1>
+          Of Ambition and Grind
+        </h1>
 
         <p class="muted">
           600 × 200 px · animated light transition · no author name
         </p>
+
       </div>
+
 
       <div class="badge">
         GITHUB PAGES READY
@@ -32,9 +55,13 @@
 
     <section class="workspace">
 
-      <!-- CONTROLS -->
+
+      <!-- =========================
+           CONTROLS
+      ========================== -->
 
       <aside class="panel">
+
 
         <div class="field">
 
@@ -111,10 +138,12 @@
         </div>
 
 
+        <!-- =========================
+             OVERLAY CONTROL
+        ========================== -->
+
         <div class="controls">
 
-
-          <!-- OVERLAY TRANSPARENCY -->
 
           <div class="range-field">
 
@@ -130,22 +159,26 @@
 
             </div>
 
+
             <input
               id="overlayInput"
               type="range"
               min="0"
-              max="70"
+              max="100"
               value="30"
             >
 
+
             <p class="hint">
-              Higher = more of the book image remains visible.
+              0% = strongest overlay · 100% = no overlay
             </p>
 
           </div>
 
 
-          <!-- ANIMATION SPEED -->
+          <!-- =========================
+               SPEED
+          ========================== -->
 
           <div class="range-field">
 
@@ -161,6 +194,7 @@
 
             </div>
 
+
             <input
               id="speedInput"
               type="range"
@@ -175,11 +209,16 @@
         </div>
 
 
+        <!-- =========================
+             BUTTONS
+        ========================== -->
+
         <div class="buttons">
 
           <button id="pngBtn">
             Download PNG
           </button>
+
 
           <button
             id="gifBtn"
@@ -198,10 +237,13 @@
           Ready.
         </p>
 
+
       </aside>
 
 
-      <!-- PREVIEW -->
+      <!-- =========================
+           PREVIEW
+      ========================== -->
 
       <section class="preview-panel">
 
@@ -215,24 +257,28 @@
 
         </div>
 
+
         <div class="size-note">
           Final email image: 600 × 200 px
         </div>
 
       </section>
 
+
     </section>
 
   </main>
 
 
-  <!-- GIF.JS -->
+  <!-- GIF LIBRARY -->
 
   <script src="https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.js"></script>
+
 
   <!-- APPLICATION -->
 
   <script src="app.js"></script>
 
 </body>
+
 </html>
