@@ -26,7 +26,7 @@ const animationStart = performance.now();
 
 
 /* =========================================================
-   DEFAULT BOOK IMAGE
+   DEFAULT IMAGE
 ========================================================= */
 
 source.onload = () => {
@@ -58,27 +58,29 @@ imageInput.addEventListener("change", event => {
 
   reader.onload = () => {
 
-    const uploaded = new Image();
+    const uploadedImage = new Image();
 
-    uploaded.onload = () => {
+    uploadedImage.onload = () => {
 
-      source = uploaded;
+      source = uploadedImage;
       sourceReady = true;
 
       statusEl.textContent =
         "Background image loaded.";
 
-      draw(0);
+      draw(
+        (performance.now() - animationStart) / 1000
+      );
     };
 
-    uploaded.onerror = () => {
+    uploadedImage.onerror = () => {
 
       statusEl.textContent =
         "Could not load that image.";
 
     };
 
-    uploaded.src = reader.result;
+    uploadedImage.src = reader.result;
   };
 
   reader.readAsDataURL(file);
@@ -86,7 +88,7 @@ imageInput.addEventListener("change", event => {
 
 
 /* =========================================================
-   CONTROLS
+   TEXT CONTROLS
 ========================================================= */
 
 [
@@ -107,6 +109,10 @@ imageInput.addEventListener("change", event => {
 });
 
 
+/* =========================================================
+   OVERLAY TRANSPARENCY CONTROL
+========================================================= */
+
 overlayInput.addEventListener("input", () => {
 
   updateOverlayLabel();
@@ -118,21 +124,29 @@ overlayInput.addEventListener("input", () => {
 });
 
 
-speedInput.addEventListener("input", () => {
-
-  updateSpeedLabel();
-
-});
-
-
 function updateOverlayLabel() {
 
   const value =
     Number(overlayInput.value);
 
-  overlayValue.textContent =
-    `${value}%`;
+  if (overlayValue) {
+
+    overlayValue.textContent =
+      `${value}%`;
+
+  }
 }
+
+
+/* =========================================================
+   SPEED CONTROL
+========================================================= */
+
+speedInput.addEventListener("input", () => {
+
+  updateSpeedLabel();
+
+});
 
 
 function updateSpeedLabel() {
@@ -150,7 +164,9 @@ function updateSpeedLabel() {
     label = "Slow";
   }
 
-  speedValue.textContent = label;
+  if (speedValue) {
+    speedValue.textContent = label;
+  }
 }
 
 
@@ -159,7 +175,7 @@ updateSpeedLabel();
 
 
 /* =========================================================
-   IMAGE COVER
+   DRAW COVER IMAGE
 ========================================================= */
 
 function drawCoverImage(image) {
@@ -217,7 +233,9 @@ function getTitleSize(text) {
     if (
       ctx.measureText(text).width <= 350
     ) {
+
       return size;
+
     }
 
     size--;
@@ -228,7 +246,7 @@ function getTitleSize(text) {
 
 
 /* =========================================================
-   TEXT
+   DRAW TEXT
 ========================================================= */
 
 function drawText(color) {
@@ -319,7 +337,7 @@ function drawText(color) {
 
 
   /*
-     SMALL DIVIDER
+     DIVIDER
   */
 
   ctx.strokeStyle = color;
@@ -333,7 +351,10 @@ function drawText(color) {
   );
 
   ctx.lineTo(
-    32 + Math.min(185, ctaWidth + 45),
+    32 + Math.min(
+      185,
+      ctaWidth + 45
+    ),
     174
   );
 
@@ -342,22 +363,70 @@ function drawText(color) {
 
 
 /* =========================================================
-   DARK OPENING STATE
+   TRANSPARENCY
+=========================================================
+
+   THIS IS THE IMPORTANT PART.
+
+   The slider represents actual transparency.
+
+   0%   = completely opaque
+   30%  = 30% transparent
+   50%  = half transparent
+   70%  = mostly transparent
+   100% = invisible overlay
+
 ========================================================= */
 
-function drawDarkState(opacity) {
+function getTransparency() {
+
+  return Number(
+    overlayInput.value
+  ) / 100;
+}
+
+
+function getOverlayOpacity() {
+
+  const transparency =
+    getTransparency();
+
+  return 1 - transparency;
+}
+
+
+/* =========================================================
+   DARK STATE
+========================================================= */
+
+function drawDarkState() {
+
+  const overlayOpacity =
+    getOverlayOpacity();
+
 
   /*
-     IMPORTANT:
+     Maximum black overlay is 90%.
 
-     This is NOT opaque black.
+     The photograph is ALWAYS underneath.
 
-     The photograph remains visible
-     underneath the black overlay.
+     Therefore even at 0% transparency,
+     there is still a tiny amount of
+     photograph visible.
   */
 
+  const blackOpacity =
+    0.90 * overlayOpacity;
+
+
   ctx.fillStyle =
-    `rgba(0, 0, 0, ${opacity})`;
+    `rgba(
+      0,
+      0,
+      0,
+      ${blackOpacity}
+    )`;
+
 
   ctx.fillRect(
     0,
@@ -378,22 +447,43 @@ function drawDarkState(opacity) {
 
 
 /* =========================================================
-   WHITE FINAL STATE
+   LIGHT STATE
 ========================================================= */
 
-function drawLightState(opacity) {
+function drawLightState() {
+
+  const overlayOpacity =
+    getOverlayOpacity();
+
 
   /*
-     IMPORTANT:
+     White overlay.
 
-     This is NOT solid white.
+     At 0% transparency:
+       82% white
 
-     The photograph remains visible
-     underneath the white overlay.
+     At 50% transparency:
+       41% white
+
+     At 70% transparency:
+       25% white
+
+     At 100%:
+       0% white
   */
 
+  const whiteOpacity =
+    0.82 * overlayOpacity;
+
+
   ctx.fillStyle =
-    `rgba(255, 255, 255, ${opacity})`;
+    `rgba(
+      255,
+      255,
+      255,
+      ${whiteOpacity}
+    )`;
+
 
   ctx.fillRect(
     0,
@@ -408,13 +498,13 @@ function drawLightState(opacity) {
   */
 
   drawText(
-    "rgba(18,18,18,0.96)"
+    "rgba(15,15,15,0.96)"
   );
 }
 
 
 /* =========================================================
-   MAIN DRAW
+   MAIN ANIMATION
 ========================================================= */
 
 function draw(t) {
@@ -433,42 +523,20 @@ function draw(t) {
 
 
   /*
-     ALWAYS START WITH THE PHOTOGRAPH
+     -------------------------------------
+     ORIGINAL PHOTOGRAPH
+     -------------------------------------
+
+     Nothing is painted over it yet.
   */
 
   drawCoverImage(source);
 
 
   /*
-     USER CONTROL
-
-     0% transparency =
-     strongest overlay
-
-     70% transparency =
-     very subtle overlay
-  */
-
-  const transparency =
-    Number(overlayInput.value) / 100;
-
-
-  /*
-     Convert transparency into
-     overlay opacity.
-
-     Default:
-
-     30% transparent
-     = 70% overlay opacity
-  */
-
-  const overlayOpacity =
-    1 - transparency;
-
-
-  /*
-     3 SECOND LOOP
+     -------------------------------------
+     THREE SECOND LOOP
+     -------------------------------------
   */
 
   const duration = 3.0;
@@ -478,10 +546,9 @@ function draw(t) {
 
 
   /*
-     ---------------------------------
-     PHASE 1
+     -------------------------------------
      DARK STATE
-     ---------------------------------
+     -------------------------------------
   */
 
   const transitionStart = 1.20;
@@ -489,26 +556,25 @@ function draw(t) {
 
   if (time < transitionStart) {
 
-    drawDarkState(
-      0.72 * overlayOpacity
-    );
+    drawDarkState();
 
     return;
   }
 
 
   /*
-     ---------------------------------
-     PHASE 2
-     UPWARD LIGHT SHOT
-     ---------------------------------
+     -------------------------------------
+     UPWARD TRANSITION
+     -------------------------------------
   */
 
   const transitionDuration = 0.90;
 
+
   let progress =
     (time - transitionStart) /
     transitionDuration;
+
 
   progress =
     Math.max(
@@ -521,8 +587,8 @@ function draw(t) {
 
 
   /*
-     Strong acceleration at the beginning,
-     then smooth finish.
+     Fast beginning.
+     Smooth finish.
   */
 
   const eased =
@@ -533,14 +599,26 @@ function draw(t) {
     );
 
 
+  const overlayOpacity =
+    getOverlayOpacity();
+
+
   /*
-     ---------------------------------
+     -------------------------------------
      DARK BASE
-     ---------------------------------
+     -------------------------------------
+
+     We start from the same dark state.
   */
 
   ctx.fillStyle =
-    `rgba(0,0,0,${0.72 * overlayOpacity})`;
+    `rgba(
+      0,
+      0,
+      0,
+      ${0.90 * overlayOpacity}
+    )`;
+
 
   ctx.fillRect(
     0,
@@ -551,20 +629,23 @@ function draw(t) {
 
 
   /*
-     ---------------------------------
+     -------------------------------------
      UPWARD LIGHT POSITION
-     ---------------------------------
+     -------------------------------------
 
-     Starts below the canvas.
+     Starts below the banner.
 
-     Ends above the canvas.
+     Shoots vertically upward.
 
-     Therefore the light literally
-     shoots upward through the banner.
+     Ends above the banner.
   */
 
-  const startY = H + 35;
-  const endY = -35;
+  const startY =
+    H + 45;
+
+  const endY =
+    -45;
+
 
   const lightY =
     startY +
@@ -572,39 +653,46 @@ function draw(t) {
 
 
   /*
-     ---------------------------------
-     LIGHT SPREAD
-     ---------------------------------
+     -------------------------------------
+     LIGHT WIDTH
+     -------------------------------------
 
-     It begins narrow and becomes
-     much wider as it travels upward.
+     Narrow at the bottom.
+
+     Very wide by the time it
+     reaches the top.
   */
 
-  const startWidth = 30;
-  const endWidth = 310;
+  const startWidth =
+    24;
+
+  const endWidth =
+    330;
+
 
   const lightWidth =
     startWidth +
-    (endWidth - startWidth) * eased;
+    (endWidth - startWidth) *
+    eased;
 
 
   /*
-     ---------------------------------
+     -------------------------------------
      LIGHT CENTER
-     ---------------------------------
+     -------------------------------------
 
-     Slightly left of center so the
-     light can reveal the composition
-     without simply sweeping sideways.
+     The light rises from roughly
+     the middle of the composition.
   */
 
-  const centerX = 270;
+  const centerX =
+    285;
 
 
   /*
-     ---------------------------------
+     -------------------------------------
      SOFT LIGHT CORE
-     ---------------------------------
+     -------------------------------------
   */
 
   const lightGradient =
@@ -618,49 +706,69 @@ function draw(t) {
     );
 
 
+  /*
+     Center
+  */
+
   lightGradient.addColorStop(
     0,
     `rgba(
       255,
       255,
       255,
-      ${0.82 * overlayOpacity}
+      ${0.78 * overlayOpacity}
     )`
   );
 
 
+  /*
+     Inner edge
+  */
+
   lightGradient.addColorStop(
-    0.25,
+    0.22,
     `rgba(
       255,
       255,
       255,
-      ${0.68 * overlayOpacity}
+      ${0.62 * overlayOpacity}
     )`
   );
 
 
+  /*
+     Middle
+  */
+
   lightGradient.addColorStop(
-    0.55,
+    0.48,
     `rgba(
       255,
       255,
       255,
-      ${0.38 * overlayOpacity}
+      ${0.40 * overlayOpacity}
     )`
   );
 
 
+  /*
+     Outer feather
+  */
+
   lightGradient.addColorStop(
-    0.78,
+    0.72,
     `rgba(
       255,
       255,
       255,
-      ${0.15 * overlayOpacity}
+      ${0.18 * overlayOpacity}
     )`
   );
 
+
+  /*
+     Completely transparent edge
+  */
 
   lightGradient.addColorStop(
     1,
@@ -668,12 +776,9 @@ function draw(t) {
   );
 
 
-  /*
-     Draw the expanding light.
-  */
-
   ctx.fillStyle =
     lightGradient;
+
 
   ctx.fillRect(
     0,
@@ -684,17 +789,20 @@ function draw(t) {
 
 
   /*
-     ---------------------------------
-     VERTICAL WHITE REVEAL
-     ---------------------------------
+     -------------------------------------
+     BROAD WHITE TRAIL
+     -------------------------------------
 
-     This creates the broad white
-     field following behind the
-     upward shot.
+     The light leaves a translucent
+     white field behind it.
+
+     This is what creates the feeling
+     that darkness is being lifted.
   */
 
   const revealTop =
-    lightY - lightWidth * 0.45;
+    lightY -
+    lightWidth * 0.45;
 
 
   const revealGradient =
@@ -718,7 +826,7 @@ function draw(t) {
       255,
       255,
       255,
-      ${0.18 * eased * overlayOpacity}
+      ${0.12 * eased * overlayOpacity}
     )`
   );
 
@@ -729,7 +837,7 @@ function draw(t) {
       255,
       255,
       255,
-      ${0.34 * eased * overlayOpacity}
+      ${0.25 * eased * overlayOpacity}
     )`
   );
 
@@ -740,7 +848,7 @@ function draw(t) {
       255,
       255,
       255,
-      ${0.55 * eased * overlayOpacity}
+      ${0.43 * eased * overlayOpacity}
     )`
   );
 
@@ -751,13 +859,14 @@ function draw(t) {
       255,
       255,
       255,
-      ${0.70 * eased * overlayOpacity}
+      ${0.62 * eased * overlayOpacity}
     )`
   );
 
 
   ctx.fillStyle =
     revealGradient;
+
 
   ctx.fillRect(
     0,
@@ -768,69 +877,57 @@ function draw(t) {
 
 
   /*
-     ---------------------------------
+     -------------------------------------
      TEXT TRANSITION
-     ---------------------------------
+     -------------------------------------
 
-     White text gradually becomes
-     black as the white state appears.
+     WHITE → BLACK
   */
 
-  const textR =
+  const textValue =
     Math.round(
       255 -
-      237 * eased
-    );
-
-  const textG =
-    Math.round(
-      255 -
-      237 * eased
-    );
-
-  const textB =
-    Math.round(
-      255 -
-      237 * eased
+      240 * eased
     );
 
 
   drawText(
     `rgba(
-      ${textR},
-      ${textG},
-      ${textB},
+      ${textValue},
+      ${textValue},
+      ${textValue},
       0.96
     )`
   );
 
 
   /*
-     ---------------------------------
-     FINAL LIGHT STATE
-     ---------------------------------
+     -------------------------------------
+     FINAL STATE
+     -------------------------------------
   */
 
   if (progress >= 1) {
 
-    drawLightState(
-      0.70 * overlayOpacity
-    );
+    drawLightState();
 
   }
 }
 
 
 /* =========================================================
-   ANIMATION LOOP
+   LIVE ANIMATION
 ========================================================= */
 
 function animationLoop(now) {
 
   const elapsed =
-    (now - animationStart) / 1000;
+    (now - animationStart) /
+    1000;
+
 
   draw(elapsed);
+
 
   requestAnimationFrame(
     animationLoop
@@ -844,16 +941,12 @@ requestAnimationFrame(
 
 
 /* =========================================================
-   PNG
+   PNG DOWNLOAD
 ========================================================= */
 
 document
   .getElementById("pngBtn")
   .addEventListener("click", () => {
-
-    /*
-       Capture the current frame.
-    */
 
     draw(
       (performance.now() - animationStart) /
@@ -881,7 +974,7 @@ document
 
 
 /* =========================================================
-   GIF
+   GIF GENERATION
 ========================================================= */
 
 document
@@ -902,10 +995,16 @@ document
 
 
     /*
-       Speed slider:
+       45 frames gives us a smooth
+       upward transition.
+    */
 
-       Lower value = shorter frame delay
-       Higher value = longer frame delay
+    const totalFrames =
+      45;
+
+
+    /*
+       User-controlled frame delay.
     */
 
     const frameDelay =
@@ -930,14 +1029,8 @@ document
 
 
     /*
-       45 frames across 3 seconds.
-
-       This gives the upward light shot
-       enough frames to look smooth.
+       Generate every frame.
     */
-
-    const totalFrames = 45;
-
 
     for (
       let frame = 0;
@@ -946,7 +1039,7 @@ document
     ) {
 
       const frameTime =
-        (frame / totalFrames) * 3;
+        (frame / totalFrames) * 3.0;
 
 
       draw(frameTime);
@@ -964,7 +1057,7 @@ document
 
 
     /*
-       GIF progress
+       Progress
     */
 
     gif.on(
@@ -979,7 +1072,7 @@ document
 
 
     /*
-       GIF complete
+       Finished
     */
 
     gif.on(
@@ -1005,13 +1098,16 @@ document
         link.click();
 
 
-        setTimeout(() => {
+        setTimeout(
+          () => {
 
-          URL.revokeObjectURL(
-            objectURL
-          );
+            URL.revokeObjectURL(
+              objectURL
+            );
 
-        }, 10000);
+          },
+          10000
+        );
 
 
         statusEl.textContent =
@@ -1020,6 +1116,10 @@ document
       }
     );
 
+
+    /*
+       Error/cancel
+    */
 
     gif.on(
       "abort",
